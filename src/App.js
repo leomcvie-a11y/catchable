@@ -74,6 +74,21 @@ const styles = `
   .tide-val{font-size:15px;font-weight:700;color:var(--dark);margin-top:1px;}
   .tide-height{font-size:12px;color:var(--blue);font-weight:600;}
   .tide-loading{padding:20px;font-size:14px;color:var(--mid);text-align:center;}
+
+  /* WEATHER WIDGET */
+  .weather-row{display:flex;gap:12px;margin:12px 16px 0;}
+  @media(min-width:768px){.weather-row{margin:12px 32px 0;}}
+  .weather-card{flex:1;background:var(--white);border-radius:20px;box-shadow:var(--shadow);padding:16px 18px;display:flex;align-items:center;gap:14px;border:1px solid var(--light);}
+  .weather-icon{font-size:32px;flex-shrink:0;}
+  .weather-label{font-size:10px;color:var(--mid);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;}
+  .weather-val{font-size:20px;font-weight:700;color:var(--dark);margin-top:1px;line-height:1.2;}
+  .weather-sub{font-size:11px;color:var(--mid);margin-top:2px;}
+
+  /* ADD SPOT MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;display:flex;align-items:flex-end;justify-content:center;}
+  .modal{background:var(--white);border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:600px;max-height:80vh;overflow-y:auto;}
+  .modal-title{font-size:18px;font-weight:800;color:var(--dark);margin-bottom:20px;}
+  .modal-close{float:right;background:none;border:none;font-size:22px;cursor:pointer;color:var(--mid);line-height:1;}
   .section-header{display:flex;align-items:center;justify-content:space-between;padding:24px 18px 12px;}
   .section-title{font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--mid);}
   .section-link{font-size:13px;color:var(--blue);font-weight:600;cursor:pointer;}
@@ -484,7 +499,7 @@ function SearchDropdown({ label, seaOptions, riverOptions, customItems=[], value
 }
 
 // ── LEAFLET MAP ───────────────────────────────────────────────────────────
-function LeafletMap({ height='420px', onPinDrop, pinFilter='my', showControls=true, catchPins=[], circleRadius=2000 }) {
+function LeafletMap({ height='420px', onPinDrop, pinFilter='my', showControls=true, catchPins=[], circleRadius=2000, communitySpotPins=[], onAddPin=null }) {
   const mapRef = useRef(null);
   const leafletMap = useRef(null);
   const tileLayerRef = useRef(null);
@@ -520,9 +535,10 @@ function LeafletMap({ height='420px', onPinDrop, pinFilter='my', showControls=tr
         userMarkerRef.current = L.marker([lat,lng],{icon}).addTo(leafletMap.current).bindPopup('📍 Your Location');
       }, () => leafletMap.current.setView([52.5,-1.5],6));
     }
-    if (onPinDrop) {
-      leafletMap.current.on('click', e => {
-        const {lat,lng} = e.latlng;
+    leafletMap.current.on('click', e => {
+      const {lat,lng} = e.latlng;
+      // Handle catch pin drop
+      if (onPinDrop) {
         if (draggableMarkerRef.current) { leafletMap.current.removeLayer(draggableMarkerRef.current); draggableMarkerRef.current=null; }
         if (circleRef.current) { leafletMap.current.removeLayer(circleRef.current); circleRef.current=null; }
         const dragIcon = L.divIcon({className:'',html:`<div style="width:22px;height:22px;background:#EF4444;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);cursor:grab"></div>`,iconSize:[22,22],iconAnchor:[11,11]});
@@ -534,8 +550,8 @@ function LeafletMap({ height='420px', onPinDrop, pinFilter='my', showControls=tr
         });
         circleRef.current = L.circle([lat,lng],{radius:circleRadiusRef.current,color:'#3B9EE8',fillColor:'#3B9EE8',fillOpacity:0.12,weight:2}).addTo(leafletMap.current);
         onPinDrop({lat,lng,hasPin:true});
-      });
-    }
+      }
+    });
     return () => { if (leafletMap.current) { leafletMap.current.remove(); leafletMap.current=null; } };
   }, []);
 
@@ -557,9 +573,10 @@ function LeafletMap({ height='420px', onPinDrop, pinFilter='my', showControls=tr
     pinMarkersRef.current = [];
     const addPins = pins => pins.forEach(p => { pinMarkersRef.current.push(L.marker([p.lat,p.lng],{icon:makeIcon(p.color)}).addTo(leafletMap.current).bindPopup(p.label)); });
     if (pinMode==='my') addPins(MY_PINS);
-    else if (pinMode==='community') addPins(COMMUNITY_PINS);
+    else if (pinMode==='community') { addPins(COMMUNITY_PINS); addPins(communitySpotPins); }
     else if (pinMode==='shops') addPins(TACKLE_SHOPS);
-  }, [pinMode, catchPins]);
+    else if (pinMode==='add') {} // handled by map click via onAddPin
+  }, [pinMode, catchPins, communitySpotPins]);
 
   const resetHome = () => { if (leafletMap.current) leafletMap.current.setView(userPos?[userPos.lat,userPos.lng]:[52.5,-1.5],userPos?12:6); };
   const removePin = () => {
@@ -581,18 +598,78 @@ function LeafletMap({ height='420px', onPinDrop, pinFilter='my', showControls=tr
               Reset
             </button>
             {onPinDrop&&<button className="map-home-btn" onClick={removePin} style={{borderColor:'#EF4444',color:'#EF4444'}}>✕ Remove pin</button>}
-            {located&&<span style={{fontSize:12,color:'var(--blue)',fontWeight:600}}>📍 Located</span>}
           </div>
           {!onPinDrop&&(
             <div className="pin-filter-row">
-              {[['my','My Pins'],['community','Community'],['blank','Blank'],['shops','Tackle Shops']].map(([val,lbl])=>(
+              {[['my','My Pins'],['community','Community'],['shops','Tackle Shops']].map(([val,lbl])=>(
                 <button key={val} className={`pin-filter-btn${pinMode===val?' active':''}`} onClick={()=>setPinMode(val)}>{lbl}</button>
               ))}
+              <button className="pin-filter-btn" style={{borderColor:'var(--blue)',color:'var(--blue)',background:'rgba(59,158,232,0.05)'}} onClick={()=>{setPinMode('add');if(onAddPin)onAddPin('open');}}>+ Add</button>
             </div>
           )}
         </div>
       )}
       <div ref={mapRef} style={{height,width:'100%',borderRadius:20,overflow:'hidden',border:'1px solid var(--light)',boxShadow:'var(--shadow)'}}/>
+    </div>
+  );
+}
+
+// ── WEATHER WIDGET ────────────────────────────────────────────────────────
+function WeatherWidget() {
+  const [weather, setWeather] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const WMO_CODES = {0:'Clear',1:'Mainly Clear',2:'Partly Cloudy',3:'Overcast',45:'Foggy',48:'Icy Fog',51:'Light Drizzle',53:'Drizzle',55:'Heavy Drizzle',61:'Light Rain',63:'Rain',65:'Heavy Rain',71:'Light Snow',73:'Snow',75:'Heavy Snow',80:'Light Showers',81:'Showers',82:'Heavy Showers',85:'Snow Showers',95:'Thunderstorm',96:'Thunderstorm',99:'Thunderstorm'};
+  const WMO_ICONS = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',96:'⛈️',99:'⛈️'};
+  const WIND_DIRS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+
+  useEffect(() => {
+    const fetchWeather = async (lat, lon) => {
+      try {
+        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m&windspeed_unit=mph&timezone=Europe%2FLondon`);
+        const data = await res.json();
+        const c = data.current;
+        const dirIdx = Math.round(c.winddirection_10m / 22.5) % 16;
+        setWeather({
+          temp: Math.round(c.temperature_2m),
+          code: c.weathercode,
+          wind: Math.round(c.windspeed_10m),
+          windDir: WIND_DIRS[dirIdx],
+          desc: WMO_CODES[c.weathercode] || 'Unknown',
+          icon: WMO_ICONS[c.weathercode] || '🌤️',
+        });
+      } catch(e) { setWeather(null); }
+      setLoading(false);
+    };
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        p => fetchWeather(p.coords.latitude, p.coords.longitude),
+        () => fetchWeather(50.9, -1.4)
+      );
+    } else fetchWeather(50.9, -1.4);
+  }, []);
+
+  if (loading) return <div className="weather-row"><div className="weather-card" style={{justifyContent:'center'}}><span style={{fontSize:13,color:'var(--mid)'}}>Fetching weather...</span></div></div>;
+  if (!weather) return null;
+
+  return (
+    <div className="weather-row">
+      <div className="weather-card">
+        <div className="weather-icon">{weather.icon}</div>
+        <div>
+          <div className="weather-label">Conditions</div>
+          <div className="weather-val">{weather.temp}°C</div>
+          <div className="weather-sub">{weather.desc}</div>
+        </div>
+      </div>
+      <div className="weather-card">
+        <div className="weather-icon">💨</div>
+        <div>
+          <div className="weather-label">Wind</div>
+          <div className="weather-val">{weather.wind} mph</div>
+          <div className="weather-sub">{weather.windDir}</div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -638,6 +715,7 @@ function HomeScreen({ onLog }) {
       </div>
     </div>
     <TideSection/>
+    <WeatherWidget/>
     <div className="section-header"><span className="section-title">Recent Catches</span><span className="section-link">See all →</span></div>
     <div className="cards-row">
       {RECENT_CATCHES.map(c=><div className="catch-card" key={c.id}>
@@ -695,12 +773,84 @@ function FeedScreen() {
 }
 
 function MapScreen({ catchPins }) {
+  const [userPos, setUserPos] = useState(null);
+  const [sortedSpots, setSortedSpots] = useState(SPOTS);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newSpot, setNewSpot] = useState({name:'',type:'Sea — Beach',notes:'',lat:null,lng:null});
+  const [savedSpots, setSavedSpots] = useState([]);
+  const [addPin, setAddPin] = useState(null);
+
+  const SPOT_TYPES = ['Sea — Beach','Sea — Pier','Sea — Rocks','Sea — Marina','River','Still Water','Reservoir','Estuary'];
+
+  function haversine(lat1,lon1,lat2,lon2){
+    const R=3958.8,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
+    const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
+
+  useEffect(()=>{
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(p=>{
+        const {latitude:lat,longitude:lng}=p.coords;
+        setUserPos({lat,lng});
+        const withDist=[...SPOTS,...savedSpots].map(s=>{
+          const dist=haversine(lat,lng,s.lat||51.5,s.lng||-1.5);
+          return {...s,distNum:dist,dist:`${dist.toFixed(1)}mi`};
+        }).sort((a,b)=>a.distNum-b.distNum);
+        setSortedSpots(withDist);
+      },()=>setSortedSpots([...SPOTS,...savedSpots]));
+    }
+  },[savedSpots]);
+
+  const saveSpot = () => {
+    if(!newSpot.name) return;
+    const spot={...newSpot,lat:addPin?.lat||userPos?.lat||51.5,lng:addPin?.lng||userPos?.lng||-1.5,emoji:'📍',fish:'',dist:'',distNum:999};
+    setSavedSpots(p=>[...p,spot]);
+    setShowAddModal(false);
+    setNewSpot({name:'',type:'Sea — Beach',notes:'',lat:null,lng:null});
+    setAddPin(null);
+  };
+
+  const allSpotPins = sortedSpots.filter(s=>s.lat).map(s=>({lat:s.lat,lng:s.lng,label:`📍 ${s.name} — ${s.type}`,color:'#10B981'}));
+
   return <div>
-    <div className="section-header" style={{paddingTop:24}}><span className="section-title">Fishing Marks</span><span className="section-link">+ Add</span></div>
-    <div className="map-wrap"><LeafletMap height="420px" pinFilter="my" showControls={true} catchPins={catchPins}/></div>
-    <div className="section-header" style={{paddingTop:20}}><span className="section-title">Nearby Spots</span></div>
-    <div className="spot-list">{SPOTS.map((s,i)=><div className="spot-item" key={i}><div className="spot-icon">{s.emoji}</div><div><div className="spot-name">{s.name}</div><div className="spot-meta">{s.type} · {s.fish}</div></div><div className="spot-dist">{s.dist}</div></div>)}</div>
+    <div className="section-header" style={{paddingTop:24}}><span className="section-title">Fishing Marks</span></div>
+    <div className="map-wrap">
+      <LeafletMap height="420px" pinFilter="my" showControls={true} catchPins={catchPins} communitySpotPins={allSpotPins}
+        onAddPin={(v)=>{if(v==='open'){setShowAddModal(true);}else{setAddPin(v);}}} />
+    </div>
+    <div className="section-header" style={{paddingTop:20}}>
+      <span className="section-title">Nearby Spots</span>
+    </div>
+    <div className="spot-list">
+      {sortedSpots.slice(0,8).map((s,i)=><div className="spot-item" key={i}>
+        <div className="spot-icon">{s.emoji}</div>
+        <div><div className="spot-name">{s.name}</div><div className="spot-meta">{s.type}{s.fish?` · ${s.fish}`:''}</div></div>
+        <div className="spot-dist">{s.dist}</div>
+      </div>)}
+    </div>
     <div style={{height:16}}/>
+
+    {showAddModal&&(
+      <div className="modal-overlay" onClick={e=>{if(e.target.classList.contains('modal-overlay'))setShowAddModal(false);}}>
+        <div className="modal">
+          <button className="modal-close" onClick={()=>setShowAddModal(false)}>×</button>
+          <div className="modal-title">Add Fishing Spot</div>
+          <div className="form-group"><label className="form-label">Spot name</label><input className="form-input" placeholder="e.g. West Beach Groyne" value={newSpot.name} onChange={e=>setNewSpot(n=>({...n,name:e.target.value}))}/></div>
+          <div className="form-group"><label className="form-label">Type</label>
+            <select className="form-select" value={newSpot.type} onChange={e=>setNewSpot(n=>({...n,type:e.target.value}))}>
+              {SPOT_TYPES.map(t=><option key={t}>{t}</option>)}
+            </select>
+          </div>
+          <div className="form-group"><label className="form-label">Notes</label><textarea className="form-textarea" placeholder="What do you catch here? Best tides? Parking?" value={newSpot.notes} onChange={e=>setNewSpot(n=>({...n,notes:e.target.value}))}/></div>
+          {addPin&&<div style={{padding:'8px 0',fontSize:13,color:'var(--blue)',fontWeight:600}}>📍 Pin set at {addPin.lat.toFixed(4)}, {addPin.lng.toFixed(4)}</div>}
+          <div style={{display:'flex',gap:10,marginTop:8}}>
+            <button className="btn-secondary" style={{flex:1,padding:'13px'}} onClick={()=>setShowAddModal(false)}>Cancel</button>
+            <button className="btn-primary" style={{flex:1,padding:'13px'}} onClick={saveSpot}>Save Spot</button>
+          </div>
+        </div>
+      </div>
+    )}
   </div>;
 }
 
