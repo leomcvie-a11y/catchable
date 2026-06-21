@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from './supabase';
 
 // ── STYLES ────────────────────────────────────────────────────────────────
 const styles = `
@@ -75,14 +76,14 @@ const styles = `
   .tide-height{font-size:12px;color:var(--blue);font-weight:600;}
   .tide-loading{padding:20px;font-size:14px;color:var(--mid);text-align:center;}
 
-  /* WEATHER WIDGET */
-  .weather-row{display:flex;gap:12px;margin:12px 16px 0;}
-  @media(min-width:768px){.weather-row{margin:12px 32px 0;}}
-  .weather-card{flex:1;background:var(--white);border-radius:20px;box-shadow:var(--shadow);padding:16px 18px;display:flex;align-items:center;gap:14px;border:1px solid var(--light);}
-  .weather-icon{font-size:32px;flex-shrink:0;}
+  /* WEATHER — inline in tide card */
+  .weather-section{display:flex;border-top:1px solid var(--light);}
+  .weather-item{flex:1;padding:12px 14px;display:flex;align-items:center;gap:10px;border-right:1px solid var(--light);}
+  .weather-item:last-child{border-right:none;}
+  .weather-icon{font-size:20px;flex-shrink:0;}
   .weather-label{font-size:10px;color:var(--mid);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;}
-  .weather-val{font-size:20px;font-weight:700;color:var(--dark);margin-top:1px;line-height:1.2;}
-  .weather-sub{font-size:11px;color:var(--mid);margin-top:2px;}
+  .weather-val{font-size:15px;font-weight:700;color:var(--dark);margin-top:1px;}
+  .weather-sub{font-size:11px;color:var(--mid);margin-top:1px;}
 
   /* ADD SPOT MODAL */
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;display:flex;align-items:flex-end;justify-content:center;}
@@ -615,87 +616,84 @@ function LeafletMap({ height='420px', onPinDrop, pinFilter='my', showControls=tr
 }
 
 // ── WEATHER WIDGET ────────────────────────────────────────────────────────
-function WeatherWidget() {
-  const [weather, setWeather] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const WMO_CODES = {0:'Clear',1:'Mainly Clear',2:'Partly Cloudy',3:'Overcast',45:'Foggy',48:'Icy Fog',51:'Light Drizzle',53:'Drizzle',55:'Heavy Drizzle',61:'Light Rain',63:'Rain',65:'Heavy Rain',71:'Light Snow',73:'Snow',75:'Heavy Snow',80:'Light Showers',81:'Showers',82:'Heavy Showers',85:'Snow Showers',95:'Thunderstorm',96:'Thunderstorm',99:'Thunderstorm'};
-  const WMO_ICONS = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',96:'⛈️',99:'⛈️'};
-  const WIND_DIRS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-
-  useEffect(() => {
-    const fetchWeather = async (lat, lon) => {
-      try {
-        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m&windspeed_unit=mph&timezone=Europe%2FLondon`);
-        const data = await res.json();
-        const c = data.current;
-        const dirIdx = Math.round(c.winddirection_10m / 22.5) % 16;
-        setWeather({
-          temp: Math.round(c.temperature_2m),
-          code: c.weathercode,
-          wind: Math.round(c.windspeed_10m),
-          windDir: WIND_DIRS[dirIdx],
-          desc: WMO_CODES[c.weathercode] || 'Unknown',
-          icon: WMO_ICONS[c.weathercode] || '🌤️',
-        });
-      } catch(e) { setWeather(null); }
-      setLoading(false);
-    };
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        p => fetchWeather(p.coords.latitude, p.coords.longitude),
-        () => fetchWeather(50.9, -1.4)
-      );
-    } else fetchWeather(50.9, -1.4);
-  }, []);
-
-  if (loading) return <div className="weather-row"><div className="weather-card" style={{justifyContent:'center'}}><span style={{fontSize:13,color:'var(--mid)'}}>Fetching weather...</span></div></div>;
-  if (!weather) return null;
-
-  return (
-    <div className="weather-row">
-      <div className="weather-card">
-        <div className="weather-icon">{weather.icon}</div>
-        <div>
-          <div className="weather-label">Conditions</div>
-          <div className="weather-val">{weather.temp}°C</div>
-          <div className="weather-sub">{weather.desc}</div>
-        </div>
-      </div>
-      <div className="weather-card">
-        <div className="weather-icon">💨</div>
-        <div>
-          <div className="weather-label">Wind</div>
-          <div className="weather-val">{weather.wind} mph</div>
-          <div className="weather-sub">{weather.windDir}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── TIDE ──────────────────────────────────────────────────────────────────
+// ── TIDE & WEATHER CARD ───────────────────────────────────────────────────
 function TideSection() {
   const [tides, setTides] = useState(null);
   const [location, setLocation] = useState('Locating...');
+  const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const WMO_CODES = {0:'Clear',1:'Mainly Clear',2:'Partly Cloudy',3:'Overcast',45:'Foggy',51:'Light Drizzle',53:'Drizzle',55:'Heavy Drizzle',61:'Light Rain',63:'Rain',65:'Heavy Rain',71:'Light Snow',73:'Snow',75:'Heavy Snow',80:'Light Showers',81:'Showers',82:'Heavy Showers',95:'Thunderstorm',99:'Thunderstorm'};
+  const WMO_ICONS = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',99:'⛈️'};
+  const WIND_DIRS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+
   useEffect(() => {
-    function gen(loc) {
-      const pad = n=>String(n).padStart(2,'0');
-      const fmt = d=>`${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const pad = n=>String(n).padStart(2,'0');
+    const fmt = d=>`${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+    const init = (loc, lat, lon) => {
       const base = new Date(); base.setHours(2,18,0);
       setLocation(loc);
-      setTides([{type:'High',time:fmt(base),height:'4.1m',icon:'🌊'},{type:'Low',time:fmt(new Date(base.getTime()+6*3600000+12*60000)),height:'0.9m',icon:'🏖️'},{type:'High',time:fmt(new Date(base.getTime()+12*3600000+24*60000)),height:'4.3m',icon:'🌊'},{type:'Low',time:fmt(new Date(base.getTime()+18*3600000+36*60000)),height:'0.7m',icon:'🏖️'}]);
+      setTides([
+        {type:'High',time:fmt(base),height:'4.1m',icon:'🌊'},
+        {type:'Low',time:fmt(new Date(base.getTime()+6*3600000+12*60000)),height:'0.9m',icon:'🏖️'},
+        {type:'High',time:fmt(new Date(base.getTime()+12*3600000+24*60000)),height:'4.3m',icon:'🌊'},
+        {type:'Low',time:fmt(new Date(base.getTime()+18*3600000+36*60000)),height:'0.7m',icon:'🏖️'},
+      ]);
+      // Fetch live weather
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m&windspeed_unit=mph&timezone=Europe%2FLondon`)
+        .then(r=>r.json())
+        .then(data=>{
+          const c=data.current;
+          const dirIdx=Math.round(c.winddirection_10m/22.5)%16;
+          setWeather({temp:Math.round(c.temperature_2m),wind:Math.round(c.windspeed_10m),windDir:WIND_DIRS[dirIdx],desc:WMO_CODES[c.weathercode]||'Fair',icon:WMO_ICONS[c.weathercode]||'🌤️'});
+        }).catch(()=>{});
       setLoading(false);
-    }
-    if (navigator.geolocation) navigator.geolocation.getCurrentPosition(p=>gen(p.coords.latitude>53?'Northern England':'Southern England'),()=>gen('Southampton'));
-    else gen('Southampton');
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        p=>init(p.coords.latitude>53?'Northern England':'Southern England', p.coords.latitude, p.coords.longitude),
+        ()=>init('Southampton',50.9,-1.4)
+      );
+    } else init('Southampton',50.9,-1.4);
   }, []);
+
   return (
     <div className="tide-card">
-      <div className="tide-header"><div className="tide-title">🌊 Today's Tides</div><div className="tide-location">📍 {location}</div></div>
-      {loading?<div className="tide-loading">Fetching tide times...</div>:(
-        <div className="tide-times">{tides.map((t,i)=><div className="tide-time" key={i}><div className="tide-icon">{t.icon}</div><div><div className="tide-type">{t.type}</div><div className="tide-val">{t.time}</div><div className="tide-height">{t.height}</div></div></div>)}</div>
+      <div className="tide-header">
+        <div className="tide-title">🌊 Today's Tides & Weather</div>
+        <div className="tide-location">📍 {location}</div>
+      </div>
+      {loading ? <div className="tide-loading">Loading...</div> : (
+        <>
+          <div className="tide-times">
+            {tides.map((t,i)=>(
+              <div className="tide-time" key={i}>
+                <div className="tide-icon">{t.icon}</div>
+                <div><div className="tide-type">{t.type}</div><div className="tide-val">{t.time}</div><div className="tide-height">{t.height}</div></div>
+              </div>
+            ))}
+          </div>
+          <div className="weather-section">
+            <div className="weather-item">
+              <div className="weather-icon">{weather?.icon||'🌤️'}</div>
+              <div>
+                <div className="weather-label">Conditions</div>
+                <div className="weather-val">{weather?`${weather.temp}°C`:'--'}</div>
+                <div className="weather-sub">{weather?.desc||'Loading...'}</div>
+              </div>
+            </div>
+            <div className="weather-item">
+              <div className="weather-icon">💨</div>
+              <div>
+                <div className="weather-label">Wind</div>
+                <div className="weather-val">{weather?`${weather.wind} mph`:'--'}</div>
+                <div className="weather-sub">{weather?.windDir||'--'}</div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
@@ -715,7 +713,6 @@ function HomeScreen({ onLog }) {
       </div>
     </div>
     <TideSection/>
-    <WeatherWidget/>
     <div className="section-header"><span className="section-title">Recent Catches</span><span className="section-link">See all →</span></div>
     <div className="cards-row">
       {RECENT_CATCHES.map(c=><div className="catch-card" key={c.id}>
@@ -1046,7 +1043,7 @@ function StatsScreen({ sessions }) {
   </div>;
 }
 
-function AccountScreen({ profile, onUpdate }) {
+function AccountScreen({ profile, onUpdate, onLogout }) {
   const [form, setForm] = useState({...profile});
   const [notifs, setNotifs] = useState({newFollower:true,communityNearby:true,appUpdates:false});
   const inputRef = useRef(null);
@@ -1109,11 +1106,74 @@ function AccountScreen({ profile, onUpdate }) {
 
         <div style={{paddingTop:20}}>
           <button className="account-save-btn" onClick={()=>onUpdate(form)}>Save Changes</button>
+        <button onClick={onLogout} style={{display:'block',width:'100%',maxWidth:240,padding:'13px',border:'2px solid #EF4444',borderRadius:14,background:'white',color:'#EF4444',fontSize:15,fontWeight:700,fontFamily:'Inter,sans-serif',cursor:'pointer',marginTop:12}}>Log Out</button>
         </div>
         <div style={{height:24}}/>
       </div>
     </div>
   </div>;
+}
+
+// ── AUTH SCREEN ──────────────────────────────────────────────────────────
+function AuthScreen({ onAuth }) {
+  const [tab, setTab] = useState('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const handleLogin = async () => {
+    if (!email || !password) { setError('Please enter your email and password.'); return; }
+    setLoading(true); setError('');
+    const { error: err } = await supabase.auth.signInWithPassword({ email, password });
+    if (err) setError(err.message);
+    setLoading(false);
+  };
+
+  const handleSignup = async () => {
+    if (!email || !password || !name) { setError('Please fill in all fields.'); return; }
+    if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    setLoading(true); setError('');
+    const { error: err } = await supabase.auth.signUp({
+      email, password,
+      options: { data: { full_name: name } }
+    });
+    if (err) setError(err.message);
+    else setSuccess('Account created! Please check your email to confirm your account, then log in.');
+    setLoading(false);
+  };
+
+  return (
+    <div className="auth-screen">
+      <div className="auth-card">
+        <div className="auth-logo">CATCH<span>BASE</span></div>
+        <div className="auth-tagline">The UK Angler's Companion</div>
+        <div className="auth-tabs">
+          <button className={`auth-tab${tab==='login'?' active':''}`} onClick={()=>{setTab('login');setError('');setSuccess('');}}>Log In</button>
+          <button className={`auth-tab${tab==='signup'?' active':''}`} onClick={()=>{setTab('signup');setError('');setSuccess('');}}>Sign Up</button>
+        </div>
+        {error && <div className="auth-error">⚠️ {error}</div>}
+        {success && <div className="auth-success">✅ {success}</div>}
+        {tab==='signup' && (
+          <input className="auth-input" placeholder="Full name" value={name} onChange={e=>setName(e.target.value)} />
+        )}
+        <input className="auth-input" placeholder="Email address" type="email" value={email} onChange={e=>setEmail(e.target.value)} />
+        <input className="auth-input" placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)}
+          onKeyDown={e=>e.key==='Enter'&&(tab==='login'?handleLogin():handleSignup())} />
+        <button className="auth-btn" disabled={loading} onClick={tab==='login'?handleLogin:handleSignup}>
+          {loading ? 'Please wait...' : tab==='login' ? 'Log In' : 'Create Account'}
+        </button>
+        <div className="auth-footer">
+          {tab==='login' ? "Don't have an account? " : "Already have an account? "}
+          <span style={{color:'var(--blue)',fontWeight:600,cursor:'pointer'}} onClick={()=>{setTab(tab==='login'?'signup':'login');setError('');setSuccess('');}}>
+            {tab==='login' ? 'Sign up free' : 'Log in'}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── NAV ───────────────────────────────────────────────────────────────────
