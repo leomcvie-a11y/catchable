@@ -160,7 +160,15 @@ const styles = `
   .feed-tabs { display: flex; margin: 16px 16px 0; background: var(--light); border-radius: 14px; padding: 4px; gap: 4px; }
   .feed-tab { flex: 1; padding: 10px; text-align: center; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--mid); transition: all 0.2s; border: none; background: none; font-family: 'Inter', sans-serif; }
   .feed-tab.active { background: var(--white); color: var(--blue); box-shadow: var(--shadow); }
-  .feed-post { margin: 0 16px 14px; background: var(--white); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--light); }
+  /* FEED DESKTOP LAYOUT */
+  .feed-layout { max-width: 680px; margin: 0 auto; }
+  .feed-post { margin: 0 16px 14px; background: var(--white); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--light); transition: box-shadow 0.2s; }
+  .feed-post:hover { box-shadow: var(--shadow2); }
+  @media (min-width: 768px) {
+    .feed-layout { padding: 0 32px; }
+    .feed-post { margin: 0 0 16px; border-radius: 16px; }
+    .feed-tabs { margin: 16px 32px 0; }
+  }
   .feed-post-header { display: flex; align-items: center; gap: 12px; padding: 16px; }
   .feed-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), #0055AA); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: white; flex-shrink: 0; overflow: hidden; }
   .feed-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -410,82 +418,93 @@ const WMO_CODES = {0:'Clear',1:'Mainly Clear',2:'Partly Cloudy',3:'Overcast',45:
 const WMO_ICONS = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',99:'⛈️'};
 const WIND_DIRS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 
-// ── SEED COMMUNITY DATA ──────────────────────────────────────────────────
+// ── SEED COMMUNITY DATA (Summer 2025 — June/July catches) ────────────────
+// Real summer species for England — bass, mackerel, pollock, wrasse, perch
 const SEED_ANGLERS = [
   {
     id: 'seed1',
-    username: 'SouthCoastSam',
+    username: 'Sam_Chesil',
+    initials: 'SC',
     location: 'Chesil Beach, Dorset',
     lat: 50.613, lng: -2.456,
     species: 'Sea Bass',
-    weight_lb: '7', weight_oz: '2',
-    bait: 'Ragworm',
-    notes: 'Incredible dawn session at Chesil this morning. Running leger rig just off the shingle bank. Biggest bass of the year!',
-    tags: ['SeaBass', 'ChesilBeach', 'Ragworm'],
+    weight_lb: '6', weight_oz: '12',
+    bait: 'Sandeel',
+    notes: 'Brilliant summer bass session at Chesil at first light. Sandeels fished on a 2-hook flapper just beyond the shingle drop-off. Water was gin clear, fish came in waves with the tide. Three fish landed, two returned.',
+    tags: ['SeaBass', 'ChesilBeach', 'SummerBass', 'Sandeel'],
     dist: 4.2,
-    photo: FISH_PHOTOS['Sea Bass'],
-    created_at: new Date(Date.now() - 2*3600000).toISOString(),
-    likes: 54,
+    photo: 'https://inaturalist-open-data.s3.amazonaws.com/photos/242886/medium.jpg',
+    created_at: new Date(Date.now() - 3*3600000).toISOString(),
+    likes: 61,
+    comments: 14,
   },
   {
     id: 'seed2',
-    username: 'NorthSeaNick',
-    location: 'Whitby Pier, Yorkshire',
-    lat: 54.486, lng: -0.612,
-    species: 'Cod',
-    weight_lb: '9', weight_oz: '4',
-    bait: 'Peeler Crab',
-    notes: 'Winter cod are back at Whitby! Peeler crab fished on the sea bed just off the pier end. Three fish in two hours.',
-    tags: ['CodFishing', 'Whitby', 'PeelerCrab'],
-    dist: 234,
-    photo: FISH_PHOTOS['Cod'],
-    created_at: new Date(Date.now() - 5*3600000).toISOString(),
-    likes: 92,
+    username: 'MackerelMike',
+    initials: 'MM',
+    location: 'Brighton Marina, East Sussex',
+    lat: 50.814, lng: -0.101,
+    species: 'Mackerel',
+    weight_lb: '1', weight_oz: '14',
+    bait: 'Feathers',
+    notes: 'Mackerel going absolutely mad off the marina wall this afternoon. Took 15 on feathers inside 45 mins then slowed right off as the tide turned. Water temp must be up — biggest shoals I have seen here in years.',
+    tags: ['Mackerel', 'Brighton', 'SummerFishing', 'Feathers'],
+    dist: 12.3,
+    photo: 'https://inaturalist-open-data.s3.amazonaws.com/photos/310257/medium.jpg',
+    created_at: new Date(Date.now() - 6*3600000).toISOString(),
+    likes: 44,
+    comments: 8,
   },
   {
     id: 'seed3',
-    username: 'CornishCaster',
-    location: 'Newquay, Cornwall',
-    lat: 50.412, lng: -5.085,
+    username: 'CornishKev',
+    initials: 'CK',
+    location: 'Penzance Harbour, Cornwall',
+    lat: 50.119, lng: -5.537,
     species: 'Pollock',
-    weight_lb: '5', weight_oz: '8',
+    weight_lb: '4', weight_oz: '8',
     bait: 'Fiiish Black Minnow',
-    notes: 'Smashed it off the headland this evening. Pollock going mental on surface lures at last light. Managed four fish.',
-    tags: ['Pollock', 'Cornwall', 'LureFishing'],
-    dist: 89,
-    photo: FISH_PHOTOS['Pollock'],
-    created_at: new Date(Date.now() - 24*3600000).toISOString(),
-    likes: 38,
+    notes: 'Evening session off the harbour wall paid off big time. Pollock stacked up tight to the structure as the light dropped. Black Minnow on a 10g head, slow retrieve with a pause — took it on the drop every time. Proper summer fishing.',
+    tags: ['Pollock', 'Cornwall', 'Penzance', 'LureFishing'],
+    dist: 156,
+    photo: 'https://inaturalist-open-data.s3.amazonaws.com/photos/2960933/medium.jpg',
+    created_at: new Date(Date.now() - 18*3600000).toISOString(),
+    likes: 52,
+    comments: 11,
   },
   {
     id: 'seed4',
-    username: 'NorfolkNige',
-    location: 'Cromer Pier, Norfolk',
-    lat: 52.931, lng: 1.302,
-    species: 'Mackerel',
-    weight_lb: '1', weight_oz: '8',
-    bait: 'Feathers',
-    notes: 'Mackerel absolutely everywhere off Cromer today. Feathers on a 4oz lead, took 20 in an hour. Fresh bait sorted for the week!',
-    tags: ['Mackerel', 'Cromer', 'Feathers'],
-    dist: 112,
-    photo: FISH_PHOTOS['Mackerel'],
-    created_at: new Date(Date.now() - 36*3600000).toISOString(),
-    likes: 67,
+    username: 'WrightWrasse',
+    initials: 'WW',
+    location: 'Lyme Regis, Dorset',
+    lat: 50.723, lng: -2.938,
+    species: 'Wrasse',
+    weight_lb: '3', weight_oz: '4',
+    bait: 'Peeler Crab',
+    notes: 'Cracking ballan wrasse from the rocks at Lyme. These fish are absolutely scrapping in the warm June water. Float fished peeler crab tight to the kelp edge — had six fish in two hours. All returned safely.',
+    tags: ['Wrasse', 'LymeRegis', 'RockFishing', 'SummerSession'],
+    dist: 28.7,
+    photo: 'https://inaturalist-open-data.s3.amazonaws.com/photos/57620/medium.jpg',
+    created_at: new Date(Date.now() - 26*3600000).toISOString(),
+    likes: 38,
+    comments: 7,
   },
   {
     id: 'seed5',
-    username: 'RiverRoachRob',
+    username: 'TrentAngler',
+    initials: 'TA',
     location: 'River Trent, Nottinghamshire',
     lat: 52.954, lng: -1.158,
     species: 'Barbel',
-    weight_lb: '10', weight_oz: '2',
+    weight_lb: '9', weight_oz: '6',
     bait: 'Pellets',
-    notes: 'Personal best barbel on the Trent! Feeder rod, method feeder with pellets tight to the far bank crease. What a fight.',
-    tags: ['Barbel', 'RiverTrent', 'FeederFishing'],
+    notes: 'Summer barbel in perfect condition on the Trent. Fished a Method feeder with 6mm pellets hard on the crease where the current breaks behind a far bank tree. Took just 20 minutes before this powerhouse smashed the rod tip round. Released in perfect condition.',
+    tags: ['Barbel', 'RiverTrent', 'SummerBarbel', 'FeederFishing'],
     dist: 142,
-    photo: FISH_PHOTOS['Barbel'],
-    created_at: new Date(Date.now() - 48*3600000).toISOString(),
-    likes: 81,
+    photo: 'https://inaturalist-open-data.s3.amazonaws.com/photos/7702/medium.jpg',
+    created_at: new Date(Date.now() - 40*3600000).toISOString(),
+    likes: 89,
+    comments: 23,
   },
 ];
 
@@ -1019,7 +1038,8 @@ function HomeScreen({ onLog, catches, user }) {
 function SeedPostCard({ p }) {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(p.likes);
-  const initials = p.username.replace(/[^A-Z]/g,'').slice(0,2) || p.username.slice(0,2).toUpperCase();
+  const [imgErr, setImgErr] = useState(false);
+
   const timeAgo = () => {
     const diff = Date.now() - new Date(p.created_at).getTime();
     const h = Math.floor(diff / 3600000);
@@ -1027,41 +1047,81 @@ function SeedPostCard({ p }) {
     if (h < 24) return `${h}h ago`;
     return `${Math.floor(h/24)}d ago`;
   };
+
+  const weightStr = `${p.weight_lb}lb ${p.weight_oz ? p.weight_oz + 'oz' : ''}`.trim();
+
   return (
     <div className="feed-post">
+      {/* Header */}
       <div className="feed-post-header">
-        <div className="feed-avatar" style={{ fontSize:14, fontWeight:700 }}>{initials}</div>
-        <div>
-          <div className="feed-username">{p.username}</div>
-          <div className="feed-location">{p.location} · {timeAgo()}</div>
+        <div className="feed-avatar" style={{ background:'linear-gradient(135deg, #3B9EE8, #1a5fa8)', fontSize:15, fontWeight:800, letterSpacing:0.5 }}>
+          {p.initials}
         </div>
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4, marginLeft:'auto' }}>
-          <div className="feed-badge">{p.weight_lb}lb {p.species}</div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div className="feed-username">{p.username}</div>
+          <div className="feed-location">
+            <span style={{ marginRight:6 }}>📍</span>
+            {p.location}
+          </div>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:5, flexShrink:0 }}>
+          <div className="feed-badge">{weightStr} {p.species}</div>
           <span className="dist-badge">{p.dist}mi away</span>
         </div>
       </div>
-      {p.photo && (
-        <div className="feed-img-area">
-          <img src={p.photo} alt={p.species} />
+
+      {/* Photo */}
+      <div className="feed-img-area" style={{ height:280, position:'relative' }}>
+        {!imgErr && p.photo ? (
+          <img
+            src={p.photo}
+            alt={`${p.species} caught at ${p.location}`}
+            style={{ width:'100%', height:'100%', objectFit:'cover' }}
+            onError={() => setImgErr(true)}
+          />
+        ) : (
+          <FishImg species={p.species} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+        )}
+        {/* Time overlay */}
+        <div style={{ position:'absolute', bottom:12, right:12, background:'rgba(0,0,0,0.55)', color:'white', fontSize:11, fontWeight:600, padding:'4px 10px', borderRadius:20, backdropFilter:'blur(4px)' }}>
+          {timeAgo()}
         </div>
-      )}
+      </div>
+
+      {/* Body */}
       <div className="feed-post-body">
-        <div className="feed-post-text">{p.notes}</div>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
+          <span style={{ fontSize:13, fontWeight:700, color:'var(--dark)' }}>{p.username}</span>
+          <span style={{ fontSize:13, color:'var(--mid)' }}>{p.notes}</span>
+        </div>
         <div className="feed-tags">
           {p.tags.map(t => <span key={t} className="feed-tag">#{t}</span>)}
         </div>
       </div>
+
+      {/* Actions */}
       <div className="feed-actions">
-        <button className={`feed-action${liked?' liked':''}`} onClick={() => { setLiked(!liked); setLikes(l => liked?l-1:l+1); }}>
-          <svg fill={liked?'var(--red)':'none'} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <button
+          className={`feed-action${liked?' liked':''}`}
+          onClick={() => { setLiked(!liked); setLikes(l => liked ? l-1 : l+1); }}
+        >
+          <svg fill={liked?'var(--red)':'none'} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
           {likes}
         </button>
         <button className="feed-action">
-          <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          0
+          <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          {p.comments}
         </button>
         <button className="feed-action">
-          <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          </svg>
           Share
         </button>
       </div>
@@ -1122,25 +1182,23 @@ function FeedScreen({ catches, user }) {
         <button className={`feed-tab${tab==='explore'?' active':''}`} onClick={() => setTab('explore')}>Explore</button>
       </div>
       <div style={{ height:16 }} />
-      {tab === 'following' && (
-        myCatches.length > 0
-          ? myCatches.map(c => <PostCard key={c.id} c={c} />)
-          : <div className="empty-state">
-              <div className="empty-state-icon">👥</div>
-              <div className="empty-state-title">Nothing here yet</div>
-              <div className="empty-state-text">Log catches with photos and they will appear in your feed. Follow other anglers to see their catches too.</div>
-            </div>
-      )}
-      {tab === 'explore' && (
-        <div>
-          <div style={{ padding:'8px 16px 12px', fontSize:12, color:'var(--mid)', fontWeight:600 }}>
-            Showing catches nearest to you first
+      <div className="feed-layout">
+        {tab === 'following' && (
+          myCatches.length > 0
+            ? myCatches.map(c => <PostCard key={c.id} c={c} />)
+            : <div className="empty-state">
+                <div className="empty-state-icon">👥</div>
+                <div className="empty-state-title">Nothing here yet</div>
+                <div className="empty-state-text">Log catches with photos and they will appear in your feed. Follow other anglers to see their catches too.</div>
+              </div>
+        )}
+        {tab === 'explore' && (
+          <div>
+            <div style={{ padding:'0 16px 12px', fontSize:12, color:'var(--mid)', fontWeight:600 }}>Showing catches nearest to you first</div>
+            {SEED_ANGLERS.map(p => <SeedPostCard key={p.id} p={p} />)}
           </div>
-          {SEED_ANGLERS.map(p => (
-            <SeedPostCard key={p.id} p={p} />
-          ))}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -1674,8 +1732,9 @@ export default function App() {
         setTackleCategories(newCats);
       }
     } else if (cats && cats.length > 0) {
-      // Just use what the DB has — no merging, no duplication
-      setTackleCategories(cats);
+      // Deduplicate by id before setting
+      const unique = cats.filter((c, idx, arr) => arr.findIndex(x => x.id === c.id) === idx);
+      setTackleCategories(unique);
     }
     if (itms) setTackleItems(itms);
     if (catchData) {
@@ -1734,26 +1793,23 @@ export default function App() {
   };
 
   const handleAddCategory = async (cat) => {
-    // Optimistic update — show immediately
-    const tempId = 'temp_' + Date.now();
-    const tempCat = { id: tempId, user_id: user.id, ...cat, created_at: new Date().toISOString() };
-    setTackleCategories(p => [...p, tempCat]);
-    const { data, error } = await supabase.from('tackle_categories').insert({ user_id: user.id, name: cat.name, emoji: cat.emoji }).select().single();
+    const { data, error } = await supabase.from('tackle_categories')
+      .insert({ user_id: user.id, name: cat.name, emoji: cat.emoji })
+      .select().single();
     if (error) {
       console.error('Category save error:', error);
-      // Remove temp on failure
-      setTackleCategories(p => p.filter(c => c.id !== tempId));
-      showToast('Failed to save category: ' + error.message, 'error');
+      showToast('Failed to save: ' + error.message, 'error');
     } else if (data) {
-      // Replace temp with real
-      setTackleCategories(p => p.map(c => c.id === tempId ? data : c));
+      setTackleCategories(p => {
+        // Only add if not already in list (prevent duplicates)
+        if (p.find(c => c.id === data.id)) return p;
+        return [...p, data];
+      });
+      showToast('Category saved!');
     }
   };
 
   const handleAddItem = async (item) => {
-    const tempId = 'temp_' + Date.now();
-    const tempItem = { id: tempId, user_id: user.id, ...item, created_at: new Date().toISOString() };
-    setTackleItems(p => [...p, tempItem]);
     const { data, error } = await supabase.from('tackle_items').insert({
       user_id: user.id,
       category_id: item.category_id,
@@ -1766,10 +1822,12 @@ export default function App() {
     }).select().single();
     if (error) {
       console.error('Item save error:', error);
-      setTackleItems(p => p.filter(i => i.id !== tempId));
       showToast('Failed to save item: ' + error.message, 'error');
     } else if (data) {
-      setTackleItems(p => p.map(i => i.id === tempId ? {...data, photo: item.photo} : i));
+      setTackleItems(p => {
+        if (p.find(i => i.id === data.id)) return p;
+        return [...p, { ...data, photo: item.photo }];
+      });
       showToast('Item saved!');
     }
   };
