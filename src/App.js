@@ -450,6 +450,38 @@ const WIND_DIRS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW
 // ── SEED DATA REMOVED ──────────────────────────────────────────────────
 const SEED_PINS = [];
 
+// ── LEAFLET MAP ───────────────────────────────────────────────────────────
+function LeafletMap({ height='420px', onPinDrop=null, showControls=true, catchPins=[], communitySpotPins=[], circleRadius=2000, defaultFilter='my' }) {
+  const mapRef = useRef(null);
+  const leafletMap = useRef(null);
+  const tileRef = useRef(null);
+  const labelsRef = useRef(null);
+  const userMarkerRef = useRef(null);
+  const pinMarkersRef = useRef([]);
+  const draggableRef = useRef(null);
+  const circleRef = useRef(null);
+  const [mapView, setMapView] = useState('Map');
+  const [pinMode, setPinMode] = useState(defaultFilter);
+  const [userPos, setUserPos] = useState(null);
+  const [located, setLocated] = useState(false);
+  const circleRadiusRef = useRef(circleRadius);
+
+  useEffect(() => { circleRadiusRef.current = circleRadius; if (circleRef.current) circleRef.current.setRadius(circleRadius); }, [circleRadius]);
+
+  const TACKLE_SHOPS = [
+    { lat:51.5, lng:-0.12, label:'London Angling Centre' },
+    { lat:50.82, lng:-0.14, label:'Brighton Angling' },
+    { lat:53.96, lng:-1.08, label:'York Fishing Tackle' },
+    { lat:50.61, lng:-2.46, label:'Chesil Bait & Tackle' },
+    { lat:51.38, lng:-2.36, label:'Bath Angling' },
+    { lat:52.63, lng:1.30, label:'Norfolk Angling' },
+  ];
+
+  const makeIcon = (color, size=14) => {
+    const L = window.L;
+    return L.divIcon({ className:'', html:`<div style="width:${size}px;height:${size}px;background:${color};border-radius:50%;border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.25)"></div>`, iconSize:[size,size], iconAnchor:[size/2,size/2] });
+  };
+
   useEffect(() => {
     if (leafletMap.current) return;
     const L = window.L; if (!L) return;
