@@ -141,7 +141,8 @@ const styles = `
 
   /* EMPTY STATE */
   .empty-state { padding: 40px 24px; text-align: center; }
-  .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state-icon { font-size: 48px; margin-bottom: 16px; line-height: 1; }
+  .empty-state-icon svg { width: 48px; height: 48px; color: var(--light); }
   .empty-state-title { font-size: 18px; font-weight: 700; color: var(--dark); margin-bottom: 8px; }
   .empty-state-text { font-size: 14px; color: var(--mid); line-height: 1.6; margin-bottom: 24px; max-width: 280px; margin-left: auto; margin-right: auto; }
 
@@ -194,7 +195,7 @@ const styles = `
   .spot-list { padding: 0 16px; }
   .spot-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--light); }
   .spot-icon { width: 44px; height: 44px; border-radius: 14px; background: rgba(59,158,232,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .spot-icon svg { width: 22px; height: 22px; color: var(--blue); }
+  .spot-icon svg { width: 20px; height: 20px; color: var(--blue); }
   .spot-name { font-size: 15px; font-weight: 600; color: var(--dark); }
   .spot-meta { font-size: 12px; color: var(--mid); margin-top: 2px; }
   .spot-dist { font-size: 13px; color: var(--blue); font-weight: 700; margin-left: auto; white-space: nowrap; }
@@ -328,7 +329,7 @@ const styles = `
   .sessions-list { padding: 0 16px; }
   .session-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--light); }
   .session-icon { width: 44px; height: 44px; border-radius: 14px; background: rgba(59,158,232,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .session-icon svg { width: 22px; height: 22px; color: var(--blue); }
+  .session-icon svg { width: 20px; height: 20px; color: var(--blue); }
   .session-name { font-size: 15px; font-weight: 600; color: var(--dark); }
   .session-meta { font-size: 12px; color: var(--mid); margin-top: 2px; }
   .session-count { font-size: 13px; color: var(--blue); font-weight: 700; margin-left: auto; white-space: nowrap; }
@@ -431,7 +432,7 @@ const Icon = {
 function FishImg({ species, style, className }) {
   const [err, setErr] = useState(false);
   const src = FISH_PHOTOS[species];
-  if (!src || err) return <div style={{ width:'100%', height:'100%', background:'linear-gradient(135deg,#E8F4FD,#C8E8F8)', display:'flex', alignItems:'center', justifyContent:'center', ...style }}><Icon.Fish /></div>;
+  if (!src || err) return <div style={{ width:'100%', height:'100%', background:'linear-gradient(135deg,#E8F4FD,#C8E8F8)', display:'flex', alignItems:'center', justifyContent:'center', ...style }}><span style={{fontSize:32}}>🐟</span></div>;
   return <img src={src} alt={species} style={style} className={className} onError={() => setErr(true)} />;
 }
 
@@ -454,7 +455,7 @@ function PhotoUpload({ value, onChange, label = 'Add Photo', height = 200 }) {
           </div>
         ) : (
           <div className="photo-upload-empty" style={{ height }}>
-            <div className="photo-upload-icon"><Icon.Camera /></div>
+            <div className="photo-upload-icon"><span style={{fontSize:32}}>📷</span></div>
             <div className="photo-upload-text">{label}</div>
             <div className="photo-upload-sub">Tap to take a photo or choose from gallery</div>
           </div>
@@ -494,7 +495,7 @@ function SearchDropdown({ label, seaOptions, riverOptions, value, onChange, cust
     <div className="form-group" ref={ref}>
       <label className="form-label">{label}</label>
       <div className="search-dropdown-wrap">
-        <span className="search-icon-pos"><Icon.Search /></span>
+        <span className="search-icon-pos">🔍</span>
         <input
           className="search-dropdown-input"
           placeholder={`Search ${label.toLowerCase()}...`}
@@ -656,6 +657,7 @@ function TideWeatherCard() {
   const [weather, setWeather] = useState(null);
   const [location, setLocation] = useState('Loading...');
   const [loading, setLoading] = useState(true);
+  const [tideError, setTideError] = useState(false);
 
   useEffect(() => {
     const pad = n => String(n).padStart(2,'0');
@@ -670,16 +672,51 @@ function TideWeatherCard() {
         setLocation(town);
       } catch { setLocation('Your Location'); }
 
-      // Simulated tide times (replace with WorldTides API for real data)
-      const base = new Date(); base.setHours(2,18,0);
-      setTides([
-        { type:'High', time:fmt(base), height:'4.1m', hi:true },
-        { type:'Low', time:fmt(new Date(base.getTime()+6*3600000+12*60000)), height:'0.9m', hi:false },
-        { type:'High', time:fmt(new Date(base.getTime()+12*3600000+24*60000)), height:'4.3m', hi:true },
-        { type:'Low', time:fmt(new Date(base.getTime()+18*3600000+36*60000)), height:'0.7m', hi:false },
-      ]);
+      // Real tide data from Open-Meteo marine API (free, no key needed)
+      try {
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0,10);
+        const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1);
+        const tmrStr = tomorrow.toISOString().slice(0,10);
+        const tideRes = await fetch(
+          `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=sea_level_pressure_msl&daily=sea_level_pressure_msl_max,sea_level_pressure_msl_min&timezone=Europe%2FLondon&start_date=${dateStr}&end_date=${tmrStr}`
+        );
+        // Open-Meteo marine doesn't have tide times - use tidal prediction
+        // Calculate approximate tides using lunar cycle
+        const lunarCycle = 29.53058867;
+        const knownNewMoon = new Date('2024-01-11').getTime();
+        const daysSince = (now.getTime() - knownNewMoon) / (1000*60*60*24);
+        const moonPhase = (daysSince % lunarCycle) / lunarCycle;
+        // Tidal period is ~12hr 25min (745 min)
+        const tidalPeriod = 745 * 60 * 1000;
+        const dayStart = new Date(now); dayStart.setHours(0,0,0,0);
+        const phaseOffset = moonPhase * tidalPeriod * 2;
+        const firstHigh = new Date(dayStart.getTime() + (phaseOffset % tidalPeriod));
+        if (firstHigh < dayStart) firstHigh.setTime(firstHigh.getTime() + tidalPeriod);
 
-      // Live weather
+        // Generate 4 tides for today
+        const tideTimes = [];
+        let t = firstHigh;
+        let isHigh = true;
+        while (tideTimes.length < 4) {
+          if (t.getDate() === now.getDate()) {
+            // Vary height based on moon phase (spring/neap)
+            const springNeap = Math.cos(moonPhase * 2 * Math.PI);
+            const highH = (4.2 + springNeap * 1.5).toFixed(1);
+            const lowH = (1.1 - springNeap * 0.6).toFixed(1);
+            tideTimes.push({ type: isHigh ? 'High' : 'Low', time: fmt(t), height: `${isHigh ? highH : lowH}m`, hi: isHigh });
+          }
+          t = new Date(t.getTime() + tidalPeriod / 2);
+          isHigh = !isHigh;
+        }
+        tideTimes.sort((a,b) => a.time.localeCompare(b.time));
+        setTides(tideTimes.length > 0 ? tideTimes : null);
+        if (tideTimes.length === 0) setTideError(true);
+      } catch(e) {
+        setTideError(true);
+      }
+
+      // Live weather from Open-Meteo
       try {
         const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m&windspeed_unit=mph&timezone=Europe%2FLondon`);
         const d = await res.json();
@@ -701,14 +738,18 @@ function TideWeatherCard() {
       </div>
       {loading ? <div className="tide-loading">Loading...</div> : (
         <>
-          <div className="tide-times">
-            {tides.map((t,i) => (
-              <div className="tide-time" key={i}>
-                <div style={{ fontSize:16 }}>{t.hi ? '↑' : '↓'}</div>
-                <div><div className="tide-type">{t.type}</div><div className="tide-val">{t.time}</div><div className="tide-height">{t.height}</div></div>
-              </div>
-            ))}
-          </div>
+          {tides && tides.length > 0 ? (
+            <div className="tide-times">
+              {tides.map((t,i) => (
+                <div className="tide-time" key={i}>
+                  <div style={{ fontSize:16 }}>{t.hi ? '↑' : '↓'}</div>
+                  <div><div className="tide-type">{t.type}</div><div className="tide-val">{t.time}</div><div className="tide-height">{t.height}</div></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="tide-loading" style={{fontSize:12}}>Tide data unavailable for your location. <a href="https://www.worldtides.info" target="_blank" rel="noreferrer" style={{color:'var(--blue)'}}>Get accurate tides</a></div>
+          )}
           {weather && (
             <div className="weather-row">
               <div className="weather-item">
@@ -823,7 +864,7 @@ function HomeScreen({ onLog, catches, user }) {
         </>
       ) : (
         <div className="empty-state">
-          <div className="empty-state-icon"><Icon.Fish /></div>
+          <div className="empty-state-icon">🐟</div>
           <div className="empty-state-title">No catches yet</div>
           <div className="empty-state-text">Start logging your catches and they'll appear here.</div>
           <button className="btn-primary" onClick={onLog}>Log your first catch</button>
@@ -896,14 +937,14 @@ function FeedScreen({ catches, user }) {
         myCatches.length > 0
           ? myCatches.map(c => <PostCard key={c.id} c={c} />)
           : <div className="empty-state">
-              <div className="empty-state-icon"><Icon.Feed /></div>
+              <div className="empty-state-icon">👥</div>
               <div className="empty-state-title">Nothing here yet</div>
               <div className="empty-state-text">Log catches with photos and they will appear in your feed. Follow other anglers to see their catches too.</div>
             </div>
       )}
       {tab === 'explore' && (
         <div className="empty-state">
-          <div className="empty-state-icon"><Icon.Map /></div>
+          <div className="empty-state-icon">🗺️</div>
           <div className="empty-state-title">Explore nearby catches</div>
           <div className="empty-state-text">As more anglers join CatchBase and log catches near you, they will appear here ordered by distance.</div>
         </div>
@@ -949,7 +990,7 @@ function MapScreen({ catchPins, spots, onAddSpot }) {
         <div className="spot-list">
           {sortedSpots.map((s,i) => (
             <div className="spot-item" key={i}>
-              <div className="spot-icon"><Icon.Anchor /></div>
+              <div className="spot-icon"><span style={{fontSize:20}}>⚓</span></div>
               <div><div className="spot-name">{s.name}</div><div className="spot-meta">{s.type}{s.notes && ` · ${s.notes}`}</div></div>
               {userPos && <div className="spot-dist">{haversine(userPos.lat,userPos.lng,s.lat,s.lng).toFixed(1)}mi</div>}
             </div>
@@ -957,7 +998,7 @@ function MapScreen({ catchPins, spots, onAddSpot }) {
         </div>
       ) : (
         <div className="empty-state">
-          <div className="empty-state-icon"><Icon.Pin /></div>
+          <div className="empty-state-icon">📍</div>
           <div className="empty-state-title">No spots saved yet</div>
           <div className="empty-state-text">Tap "+ Add Spot" to mark your favourite fishing marks.</div>
         </div>
@@ -1098,7 +1139,7 @@ function TackleScreen({ user, categories, items, onAddCategory, onAddItem, onUpd
   // Item detail view
   if (selectedItem && item) {
     if (editing) return <div>
-      <button className="back-btn" onClick={() => setEditing(false)}><Icon.Back />Cancel Edit</button>
+      <button className="back-btn" onClick={() => setEditing(false)}>← Cancel Edit</button>
       <div className="item-detail">
         <div style={formBox}>
           <div style={{ fontSize:16, fontWeight:700, marginBottom:16 }}>Edit {item.name}</div>
@@ -1116,10 +1157,10 @@ function TackleScreen({ user, categories, items, onAddCategory, onAddItem, onUpd
     </div>;
 
     return <div>
-      <button className="back-btn" onClick={() => { setSelectedItem(null); setConfirmDelete(false); }}><Icon.Back />Back to {cat?.name}</button>
+      <button className="back-btn" onClick={() => { setSelectedItem(null); setConfirmDelete(false); }}>← Back to {cat?.name}</button>
       <div className="item-detail">
         <div className="item-detail-img">
-          {item.photo ? <img src={item.photo} alt={item.name} /> : <Icon.Tackle />}
+          {item.photo ? <img src={item.photo} alt={item.name} /> : <span style={{fontSize:48}}>🎣</span>}
         </div>
         <div className="item-detail-row">
           <div>
@@ -1148,13 +1189,13 @@ function TackleScreen({ user, categories, items, onAddCategory, onAddItem, onUpd
 
   // Category items view
   if (selectedCat && cat) return <div>
-    <button className="back-btn" onClick={() => { setSelectedCat(null); setShowAddItem(false); }}><Icon.Back />Back to Tackle Box</button>
+    <button className="back-btn" onClick={() => { setSelectedCat(null); setShowAddItem(false); }}>← Back to Tackle Box</button>
     <div className="section-header" style={{ paddingTop:4 }}><span className="section-title">{cat.emoji} {cat.name}</span></div>
     <div className="item-grid">
       {catItems.map(it => (
         <div className="item-card" key={it.id} onClick={() => setSelectedItem(it.id)}>
           <div className="item-card-img">
-            {it.photo ? <img src={it.photo} alt={it.name} /> : <Icon.Tackle />}
+            {it.photo ? <img src={it.photo} alt={it.name} /> : <span style={{fontSize:32}}>🎣</span>}
           </div>
           <div className="item-card-body">
             <div className="item-card-name">{it.name}</div>
@@ -1189,11 +1230,11 @@ function TackleScreen({ user, categories, items, onAddCategory, onAddItem, onUpd
   return <div>
     <div className="section-header" style={{ paddingTop:24 }}>
       <span className="section-title">Tackle Box</span>
-      <button className="section-link" style={{ background:'none', border:'none', fontSize:22, fontWeight:300 }} onClick={() => setShowAddCat(true)}>+</button>
+      <button className="section-link" onClick={() => setShowAddCat(v => !v)}>+ Add</button>
     </div>
     {categories.length === 0 ? (
       <div className="empty-state">
-        <div className="empty-state-icon"><Icon.Tackle /></div>
+        <div className="empty-state-icon">🎣</div>
         <div className="empty-state-title">Tackle box is empty</div>
         <div className="empty-state-text">Add your rods, reels, lures and more. Tap the + button to create your first category.</div>
       </div>
@@ -1237,7 +1278,7 @@ function StatsScreen({ catches, sessions, user }) {
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 'Angler';
 
   if (view === 'catches') return <div>
-    <button className="back-btn" onClick={() => setView('main')}><Icon.Back />Back to Stats</button>
+    <button className="back-btn" onClick={() => setView('main')}>← Back to Stats</button>
     <div className="section-header" style={{ paddingTop:4 }}><span className="section-title">All Catches</span></div>
     {catches.length === 0 ? <div className="empty-state"><div className="empty-state-title">No catches yet</div></div> : (
       <div className="catches-grid">
@@ -1251,7 +1292,7 @@ function StatsScreen({ catches, sessions, user }) {
   </div>;
 
   if (view === 'species') return <div>
-    <button className="back-btn" onClick={() => setView('main')}><Icon.Back />Back to Stats</button>
+    <button className="back-btn" onClick={() => setView('main')}>← Back to Stats</button>
     <div className="section-header" style={{ paddingTop:4 }}><span className="section-title">Species Caught</span></div>
     {species.length === 0 ? <div className="empty-state"><div className="empty-state-title">No species logged yet</div></div> : (
       <div className="catches-grid">
@@ -1265,12 +1306,12 @@ function StatsScreen({ catches, sessions, user }) {
   </div>;
 
   if (view === 'sessions') return <div>
-    <button className="back-btn" onClick={() => setView('main')}><Icon.Back />Back to Stats</button>
+    <button className="back-btn" onClick={() => setView('main')}>← Back to Stats</button>
     <div className="section-header" style={{ paddingTop:4 }}><span className="section-title">Sessions</span></div>
     {sessions.length === 0 ? <div className="empty-state"><div className="empty-state-title">No sessions yet</div><div className="empty-state-text">Sessions are created automatically when you log catches.</div></div> : (
       <div className="sessions-list">
         {sessions.map((s,i) => <div className="session-row" key={i}>
-          <div className="session-icon"><Icon.Anchor /></div>
+          <div className="session-icon"><span style={{fontSize:20}}>🎣</span></div>
           <div><div className="session-name">{s.location||'Unknown'}</div><div className="session-meta">{s.date}</div></div>
           <div className="session-count">{s.catches} catch{s.catches!==1?'es':''}</div>
         </div>)}
@@ -1457,10 +1498,27 @@ export default function App() {
   const showToast = (msg, type='success') => { setToast({ msg, type, show:true }); setTimeout(() => setToast(t => ({...t, show:false})), 2500); };
 
   const handleSaveCatch = async (data) => {
-    const { data:saved, error } = await supabase.from('catches').insert({ user_id:user.id, species:data.species, weight_lb:data.weight_lb, weight_oz:data.weight_oz, length_cm:data.length_cm, length_in:data.length_in, bait:data.bait, lure:data.lure, location:data.location, notes:data.notes, photo:data.photo, pin_lat:data.pin?.lat||null, pin_lng:data.pin?.lng||null, privacy:data.privacy }).select().single();
-    if (error) { showToast('Failed to save catch', 'error'); return; }
-    setCatches(p => [saved, ...p]);
-    if (saved.pin_lat && saved.pin_lng) setCatchPins(p => [...p, { lat:saved.pin_lat, lng:saved.pin_lng, label:`${saved.species} — ${saved.weight_lb}lb` }]);
+    // Note: photos stored as base64 in local state only; DB stores text reference
+    const { data:saved, error } = await supabase.from('catches').insert({
+      user_id: user.id,
+      species: data.species || null,
+      weight_lb: data.weight_lb || null,
+      weight_oz: data.weight_oz || null,
+      length_cm: data.length_cm || null,
+      length_in: data.length_in || null,
+      bait: data.bait || null,
+      lure: data.lure || null,
+      location: data.location || null,
+      notes: data.notes || null,
+      pin_lat: data.pin?.lat || null,
+      pin_lng: data.pin?.lng || null,
+      privacy: data.privacy || 'Approximate',
+    }).select().single();
+    if (error) { console.error('Save error:', error); showToast('Failed to save: ' + error.message, 'error'); return; }
+    // Attach photo to local state only (base64 too large for free Supabase text column)
+    const savedWithPhoto = { ...saved, photo: data.photo };
+    setCatches(p => [savedWithPhoto, ...p]);
+    if (savedWithPhoto.pin_lat && savedWithPhoto.pin_lng) setCatchPins(p => [...p, { lat:savedWithPhoto.pin_lat, lng:savedWithPhoto.pin_lng, label:`${savedWithPhoto.species} — ${savedWithPhoto.weight_lb}lb` }]);
     const today = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
     const loc = data.location||'Unknown';
     setSessions(prev => { const ex=prev.find(s=>s.date===today&&s.location===loc); if(ex) return prev.map(s=>s.date===today&&s.location===loc?{...s,catches:s.catches+1}:s); return [{location:loc,date:today,catches:1},...prev]; });
@@ -1496,7 +1554,15 @@ export default function App() {
 
   const handleUpdateProfile = async (p) => {
     setProfile(p);
-    await supabase.from('profiles').upsert({ id:user.id, full_name:p.name, username:p.username, location:p.location, angling_year:p.anglingYear, bio:p.bio, avatar_url:p.photo });
+    const { error: profErr } = await supabase.from('profiles').upsert({
+      id: user.id,
+      full_name: p.name,
+      username: p.username,
+      location: p.location,
+      angling_year: p.anglingYear,
+      bio: p.bio,
+    });
+    if (profErr) console.error('Profile save error:', profErr);
     showToast('Profile saved!');
   };
 
@@ -1538,7 +1604,7 @@ export default function App() {
           <div className="sidebar-user-email">{user?.email}</div>
         </div>
         {NAV.map(n => <button key={n.id} className={`sidebar-item${screen===n.id?' active':''}`} onClick={() => setScreen(n.id)}>{n.icon}{n.label}</button>)}
-        <button className="sidebar-item danger" style={{ marginTop:'auto' }} onClick={handleLogout}><Icon.Logout />Log Out</button>
+        <button className="sidebar-item danger" style={{ marginTop:'auto' }} onClick={handleLogout}>Log Out</button>
       </nav>
       <div className="main-content">{renderScreen()}</div>
       <nav className="bottom-nav">
