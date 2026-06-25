@@ -410,6 +410,91 @@ const WMO_CODES = {0:'Clear',1:'Mainly Clear',2:'Partly Cloudy',3:'Overcast',45:
 const WMO_ICONS = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',99:'⛈️'};
 const WIND_DIRS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 
+// ── SEED COMMUNITY DATA ──────────────────────────────────────────────────
+const SEED_ANGLERS = [
+  {
+    id: 'seed1',
+    username: 'SouthCoastSam',
+    location: 'Chesil Beach, Dorset',
+    lat: 50.613, lng: -2.456,
+    species: 'Sea Bass',
+    weight_lb: '7', weight_oz: '2',
+    bait: 'Ragworm',
+    notes: 'Incredible dawn session at Chesil this morning. Running leger rig just off the shingle bank. Biggest bass of the year!',
+    tags: ['SeaBass', 'ChesilBeach', 'Ragworm'],
+    dist: 4.2,
+    photo: FISH_PHOTOS['Sea Bass'],
+    created_at: new Date(Date.now() - 2*3600000).toISOString(),
+    likes: 54,
+  },
+  {
+    id: 'seed2',
+    username: 'NorthSeaNick',
+    location: 'Whitby Pier, Yorkshire',
+    lat: 54.486, lng: -0.612,
+    species: 'Cod',
+    weight_lb: '9', weight_oz: '4',
+    bait: 'Peeler Crab',
+    notes: 'Winter cod are back at Whitby! Peeler crab fished on the sea bed just off the pier end. Three fish in two hours.',
+    tags: ['CodFishing', 'Whitby', 'PeelerCrab'],
+    dist: 234,
+    photo: FISH_PHOTOS['Cod'],
+    created_at: new Date(Date.now() - 5*3600000).toISOString(),
+    likes: 92,
+  },
+  {
+    id: 'seed3',
+    username: 'CornishCaster',
+    location: 'Newquay, Cornwall',
+    lat: 50.412, lng: -5.085,
+    species: 'Pollock',
+    weight_lb: '5', weight_oz: '8',
+    bait: 'Fiiish Black Minnow',
+    notes: 'Smashed it off the headland this evening. Pollock going mental on surface lures at last light. Managed four fish.',
+    tags: ['Pollock', 'Cornwall', 'LureFishing'],
+    dist: 89,
+    photo: FISH_PHOTOS['Pollock'],
+    created_at: new Date(Date.now() - 24*3600000).toISOString(),
+    likes: 38,
+  },
+  {
+    id: 'seed4',
+    username: 'NorfolkNige',
+    location: 'Cromer Pier, Norfolk',
+    lat: 52.931, lng: 1.302,
+    species: 'Mackerel',
+    weight_lb: '1', weight_oz: '8',
+    bait: 'Feathers',
+    notes: 'Mackerel absolutely everywhere off Cromer today. Feathers on a 4oz lead, took 20 in an hour. Fresh bait sorted for the week!',
+    tags: ['Mackerel', 'Cromer', 'Feathers'],
+    dist: 112,
+    photo: FISH_PHOTOS['Mackerel'],
+    created_at: new Date(Date.now() - 36*3600000).toISOString(),
+    likes: 67,
+  },
+  {
+    id: 'seed5',
+    username: 'RiverRoachRob',
+    location: 'River Trent, Nottinghamshire',
+    lat: 52.954, lng: -1.158,
+    species: 'Barbel',
+    weight_lb: '10', weight_oz: '2',
+    bait: 'Pellets',
+    notes: 'Personal best barbel on the Trent! Feeder rod, method feeder with pellets tight to the far bank crease. What a fight.',
+    tags: ['Barbel', 'RiverTrent', 'FeederFishing'],
+    dist: 142,
+    photo: FISH_PHOTOS['Barbel'],
+    created_at: new Date(Date.now() - 48*3600000).toISOString(),
+    likes: 81,
+  },
+];
+
+const SEED_PINS = SEED_ANGLERS.map(a => ({
+  lat: a.lat, lng: a.lng,
+  label: `${a.username} — ${a.species} ${a.weight_lb}lb`,
+  color: '#10B981',
+}));
+
 // ── ICONS ─────────────────────────────────────────────────────────────────
 const Icon = {
   Home: () => <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
@@ -774,6 +859,9 @@ function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [location, setLocation] = useState('');
+  const [anglingYear, setAnglingYear] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -787,14 +875,40 @@ function AuthScreen() {
   };
 
   const handleSignup = async () => {
-    if (!name || !email || !password) { setError('Please fill in all fields.'); return; }
+    if (!name || !email || !password || !location) { setError('Please fill in all required fields.'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
     setLoading(true); setError('');
-    const { error: err } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
-    if (err) setError(err.message);
-    else setSuccess('Account created! Check your email to confirm, then log in.');
+    const { data, error: err } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: name,
+          username: username || null,
+          location: location || null,
+          angling_year: anglingYear || null,
+        }
+      }
+    });
+    if (err) {
+      setError(err.message);
+    } else {
+      // Also save to profiles table immediately
+      if (data?.user) {
+        await supabase.from('profiles').upsert({
+          id: data.user.id,
+          full_name: name,
+          username: username || null,
+          location: location || null,
+          angling_year: anglingYear || null,
+        });
+      }
+      setSuccess('Account created! Check your email to confirm, then log in.');
+    }
     setLoading(false);
   };
+
+  const switchTab = (t) => { setTab(t); setError(''); setSuccess(''); };
 
   return (
     <div className="auth-screen">
@@ -802,25 +916,45 @@ function AuthScreen() {
         <div className="auth-logo">CATCH<span>BASE</span></div>
         <div className="auth-tagline">The UK Angler's Companion</div>
         <div className="auth-tabs">
-          <button className={`auth-tab${tab==='login'?' active':''}`} onClick={() => { setTab('login'); setError(''); setSuccess(''); }}>Log In</button>
-          <button className={`auth-tab${tab==='signup'?' active':''}`} onClick={() => { setTab('signup'); setError(''); setSuccess(''); }}>Sign Up</button>
+          <button className={`auth-tab${tab==='login'?' active':''}`} onClick={() => switchTab('login')}>Log In</button>
+          <button className={`auth-tab${tab==='signup'?' active':''}`} onClick={() => switchTab('signup')}>Sign Up</button>
         </div>
         {error && <div className="auth-error">{error}</div>}
         {success && <div className="auth-success">{success}</div>}
-        {tab === 'signup' && (
-          <><label className="auth-label">Full name</label>
-          <input className="auth-input" placeholder="e.g. Matt Clarke" value={name} onChange={e => setName(e.target.value)} /></>
+
+        {tab === 'login' ? (
+          <>
+            <label className="auth-label">Email address</label>
+            <input className="auth-input" placeholder="e.g. matt@email.com" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+            <label className="auth-label">Password</label>
+            <input className="auth-input" placeholder="Your password" type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key==='Enter' && handleLogin()} />
+            <button className="auth-btn" disabled={loading} onClick={handleLogin}>
+              {loading ? 'Please wait...' : 'Log In'}
+            </button>
+          </>
+        ) : (
+          <>
+            <label className="auth-label">Full name *</label>
+            <input className="auth-input" placeholder="e.g. Matt Clarke" value={name} onChange={e => setName(e.target.value)} />
+            <label className="auth-label">Username</label>
+            <input className="auth-input" placeholder="e.g. mattfishes" value={username} onChange={e => setUsername(e.target.value)} />
+            <label className="auth-label">Email address *</label>
+            <input className="auth-input" placeholder="e.g. matt@email.com" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+            <label className="auth-label">Password *</label>
+            <input className="auth-input" placeholder="Min. 6 characters" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+            <label className="auth-label">Your location *</label>
+            <input className="auth-input" placeholder="e.g. Southampton, Hampshire" value={location} onChange={e => setLocation(e.target.value)} />
+            <label className="auth-label">Angling since</label>
+            <input className="auth-input" placeholder="e.g. 2015" value={anglingYear} onChange={e => setAnglingYear(e.target.value)} />
+            <button className="auth-btn" disabled={loading} onClick={handleSignup}>
+              {loading ? 'Creating account...' : 'Create Account'}
+            </button>
+          </>
         )}
-        <label className="auth-label">Email address</label>
-        <input className="auth-input" placeholder="e.g. matt@email.com" type="email" value={email} onChange={e => setEmail(e.target.value)} />
-        <label className="auth-label">Password</label>
-        <input className="auth-input" placeholder="Min. 6 characters" type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key==='Enter' && (tab==='login' ? handleLogin() : handleSignup())} />
-        <button className="auth-btn" disabled={loading} onClick={tab==='login' ? handleLogin : handleSignup}>
-          {loading ? 'Please wait...' : tab==='login' ? 'Log In' : 'Create Account'}
-        </button>
+
         <div className="auth-switch">
           {tab==='login' ? "Don't have an account? " : 'Already have an account? '}
-          <span onClick={() => { setTab(tab==='login'?'signup':'login'); setError(''); setSuccess(''); }}>
+          <span onClick={() => switchTab(tab==='login'?'signup':'login')}>
             {tab==='login' ? 'Sign up free' : 'Log in'}
           </span>
         </div>
@@ -841,6 +975,7 @@ function HomeScreen({ onLog, catches, user }) {
         <div className="hero-stats">
           <div><div className="hero-stat-val">{catches.length}</div><div className="hero-stat-label">Your catches</div></div>
           <div><div className="hero-stat-val">{[...new Set(catches.map(c=>c.species))].length}</div><div className="hero-stat-label">Species</div></div>
+          <div><div className="hero-stat-val">{SEED_ANGLERS.length + 1}</div><div className="hero-stat-label">Anglers</div></div>
         </div>
       </div>
       <TideWeatherCard />
@@ -876,6 +1011,60 @@ function HomeScreen({ onLog, catches, user }) {
         <button className="btn-secondary">+ Add Spot</button>
       </div>
       <div style={{ height:16 }} />
+    </div>
+  );
+}
+
+// ── SEED POST CARD ───────────────────────────────────────────────────────
+function SeedPostCard({ p }) {
+  const [liked, setLiked] = useState(false);
+  const [likes, setLikes] = useState(p.likes);
+  const initials = p.username.replace(/[^A-Z]/g,'').slice(0,2) || p.username.slice(0,2).toUpperCase();
+  const timeAgo = () => {
+    const diff = Date.now() - new Date(p.created_at).getTime();
+    const h = Math.floor(diff / 3600000);
+    if (h < 1) return 'Just now';
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h/24)}d ago`;
+  };
+  return (
+    <div className="feed-post">
+      <div className="feed-post-header">
+        <div className="feed-avatar" style={{ fontSize:14, fontWeight:700 }}>{initials}</div>
+        <div>
+          <div className="feed-username">{p.username}</div>
+          <div className="feed-location">{p.location} · {timeAgo()}</div>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4, marginLeft:'auto' }}>
+          <div className="feed-badge">{p.weight_lb}lb {p.species}</div>
+          <span className="dist-badge">{p.dist}mi away</span>
+        </div>
+      </div>
+      {p.photo && (
+        <div className="feed-img-area">
+          <img src={p.photo} alt={p.species} />
+        </div>
+      )}
+      <div className="feed-post-body">
+        <div className="feed-post-text">{p.notes}</div>
+        <div className="feed-tags">
+          {p.tags.map(t => <span key={t} className="feed-tag">#{t}</span>)}
+        </div>
+      </div>
+      <div className="feed-actions">
+        <button className={`feed-action${liked?' liked':''}`} onClick={() => { setLiked(!liked); setLikes(l => liked?l-1:l+1); }}>
+          <svg fill={liked?'var(--red)':'none'} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          {likes}
+        </button>
+        <button className="feed-action">
+          <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          0
+        </button>
+        <button className="feed-action">
+          <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share
+        </button>
+      </div>
     </div>
   );
 }
@@ -943,10 +1132,13 @@ function FeedScreen({ catches, user }) {
             </div>
       )}
       {tab === 'explore' && (
-        <div className="empty-state">
-          <div className="empty-state-icon">🗺️</div>
-          <div className="empty-state-title">Explore nearby catches</div>
-          <div className="empty-state-text">As more anglers join CatchBase and log catches near you, they will appear here ordered by distance.</div>
+        <div>
+          <div style={{ padding:'8px 16px 12px', fontSize:12, color:'var(--mid)', fontWeight:600 }}>
+            Showing catches nearest to you first
+          </div>
+          {SEED_ANGLERS.map(p => (
+            <SeedPostCard key={p.id} p={p} />
+          ))}
         </div>
       )}
     </div>
@@ -983,7 +1175,7 @@ function MapScreen({ catchPins, spots, onAddSpot }) {
         <button className="section-link" onClick={() => setShowModal(true)}>+ Add Spot</button>
       </div>
       <div className="map-wrap">
-        <LeafletMap height="420px" catchPins={catchPins} showControls={true} defaultFilter="my" />
+        <LeafletMap height="420px" catchPins={catchPins} communitySpotPins={SEED_PINS} showControls={true} defaultFilter="my" />
       </div>
       <div className="section-header" style={{ paddingTop:20 }}><span className="section-title">Your Spots</span></div>
       {sortedSpots.length > 0 ? (
@@ -1472,27 +1664,18 @@ export default function App() {
     ]);
 
     // Auto-create default categories for new users
-    if (cats && cats.length === 0) {
+    if (cats !== null && cats.length === 0) {
       const inserts = DEFAULT_CATEGORIES.map(c => ({ user_id:uid, name:c.name, emoji:c.emoji }));
       const { data:newCats, error:catErr } = await supabase.from('tackle_categories').insert(inserts).select();
       if (catErr) {
         console.error('Default category creation error:', catErr);
-        // Show defaults locally even if DB save fails
         setTackleCategories(DEFAULT_CATEGORIES.map((c,i) => ({ id:'default_'+i, user_id:uid, ...c })));
       } else if (newCats) {
         setTackleCategories(newCats);
       }
-    } else if (cats) {
-      // Always ensure all 6 defaults exist - add any missing ones
-      const existingNames = cats.map(c => c.name);
-      const missing = DEFAULT_CATEGORIES.filter(d => !existingNames.includes(d.name));
-      if (missing.length > 0) {
-        const inserts = missing.map(c => ({ user_id:uid, name:c.name, emoji:c.emoji }));
-        const { data:newCats } = await supabase.from('tackle_categories').insert(inserts).select();
-        setTackleCategories([...cats, ...(newCats || [])]);
-      } else {
-        setTackleCategories(cats);
-      }
+    } else if (cats && cats.length > 0) {
+      // Just use what the DB has — no merging, no duplication
+      setTackleCategories(cats);
     }
     if (itms) setTackleItems(itms);
     if (catchData) {
