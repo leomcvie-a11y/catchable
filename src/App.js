@@ -1167,8 +1167,8 @@ function TackleScreen({ user, categories, items, onAddCategory, onAddItem, onUpd
             <div className="item-detail-name">{item.name}</div>
             {item.brand && <div className="item-detail-brand">{item.brand}</div>}
             {item.price && <div className="item-detail-price">£{item.price}</div>}
-            {item.purchaseDate && <div className="item-detail-meta">Purchased: {item.purchaseDate}</div>}
-            {item.purchaseWhere && <div className="item-detail-meta">From: {item.purchaseWhere}</div>}
+            {(item.purchaseDate || item.purchase_date) && <div className="item-detail-meta">Purchased: {item.purchaseDate || item.purchase_date}</div>}
+            {(item.purchaseWhere || item.purchase_where) && <div className="item-detail-meta">From: {item.purchaseWhere || item.purchase_where}</div>}
           </div>
           <button className="edit-btn" onClick={() => { setEditItem({...item}); setEditing(true); }}>Edit</button>
         </div>
@@ -1474,10 +1474,25 @@ export default function App() {
     // Auto-create default categories for new users
     if (cats && cats.length === 0) {
       const inserts = DEFAULT_CATEGORIES.map(c => ({ user_id:uid, name:c.name, emoji:c.emoji }));
-      const { data:newCats } = await supabase.from('tackle_categories').insert(inserts).select();
-      if (newCats) setTackleCategories(newCats);
+      const { data:newCats, error:catErr } = await supabase.from('tackle_categories').insert(inserts).select();
+      if (catErr) {
+        console.error('Default category creation error:', catErr);
+        // Show defaults locally even if DB save fails
+        setTackleCategories(DEFAULT_CATEGORIES.map((c,i) => ({ id:'default_'+i, user_id:uid, ...c })));
+      } else if (newCats) {
+        setTackleCategories(newCats);
+      }
     } else if (cats) {
-      setTackleCategories(cats);
+      // Always ensure all 6 defaults exist - add any missing ones
+      const existingNames = cats.map(c => c.name);
+      const missing = DEFAULT_CATEGORIES.filter(d => !existingNames.includes(d.name));
+      if (missing.length > 0) {
+        const inserts = missing.map(c => ({ user_id:uid, name:c.name, emoji:c.emoji }));
+        const { data:newCats } = await supabase.from('tackle_categories').insert(inserts).select();
+        setTackleCategories([...cats, ...(newCats || [])]);
+      } else {
+        setTackleCategories(cats);
+      }
     }
     if (itms) setTackleItems(itms);
     if (catchData) {
@@ -1514,8 +1529,11 @@ export default function App() {
       pin_lng: data.pin?.lng || null,
       privacy: data.privacy || 'Approximate',
     }).select().single();
-    if (error) { console.error('Save error:', error); showToast('Failed to save: ' + error.message, 'error'); return; }
-    // Attach photo to local state only (base64 too large for free Supabase text column)
+    if (error) {
+      console.error('Save catch error:', error);
+      showToast('Failed to save: ' + error.message, 'error');
+      return;
+    }
     const savedWithPhoto = { ...saved, photo: data.photo };
     setCatches(p => [savedWithPhoto, ...p]);
     if (savedWithPhoto.pin_lat && savedWithPhoto.pin_lng) setCatchPins(p => [...p, { lat:savedWithPhoto.pin_lat, lng:savedWithPhoto.pin_lng, label:`${savedWithPhoto.species} — ${savedWithPhoto.weight_lb}lb` }]);
@@ -1533,18 +1551,58 @@ export default function App() {
   };
 
   const handleAddCategory = async (cat) => {
-    const { data, error } = await supabase.from('tackle_categories').insert({ user_id:user.id, ...cat }).select().single();
-    if (!error && data) setTackleCategories(p => [...p, data]);
+    // Optimistic update — show immediately
+    const tempId = 'temp_' + Date.now();
+    const tempCat = { id: tempId, user_id: user.id, ...cat, created_at: new Date().toISOString() };
+    setTackleCategories(p => [...p, tempCat]);
+    const { data, error } = await supabase.from('tackle_categories').insert({ user_id: user.id, name: cat.name, emoji: cat.emoji }).select().single();
+    if (error) {
+      console.error('Category save error:', error);
+      // Remove temp on failure
+      setTackleCategories(p => p.filter(c => c.id !== tempId));
+      showToast('Failed to save category: ' + error.message, 'error');
+    } else if (data) {
+      // Replace temp with real
+      setTackleCategories(p => p.map(c => c.id === tempId ? data : c));
+    }
   };
 
   const handleAddItem = async (item) => {
-    const { data, error } = await supabase.from('tackle_items').insert({ user_id:user.id, ...item }).select().single();
-    if (!error && data) { setTackleItems(p => [...p, data]); showToast('Item added!'); }
+    const tempId = 'temp_' + Date.now();
+    const tempItem = { id: tempId, user_id: user.id, ...item, created_at: new Date().toISOString() };
+    setTackleItems(p => [...p, tempItem]);
+    const { data, error } = await supabase.from('tackle_items').insert({
+      user_id: user.id,
+      category_id: item.category_id,
+      name: item.name || null,
+      brand: item.brand || null,
+      price: item.price || null,
+      purchase_date: item.purchaseDate || null,
+      purchase_where: item.purchaseWhere || null,
+      comments: item.comments || null,
+    }).select().single();
+    if (error) {
+      console.error('Item save error:', error);
+      setTackleItems(p => p.filter(i => i.id !== tempId));
+      showToast('Failed to save item: ' + error.message, 'error');
+    } else if (data) {
+      setTackleItems(p => p.map(i => i.id === tempId ? {...data, photo: item.photo} : i));
+      showToast('Item saved!');
+    }
   };
 
   const handleUpdateItem = async (id, updates) => {
-    const { error } = await supabase.from('tackle_items').update(updates).eq('id', id);
+    const dbUpdates = {
+      name: updates.name || null,
+      brand: updates.brand || null,
+      price: updates.price || null,
+      purchase_date: updates.purchaseDate || updates.purchase_date || null,
+      purchase_where: updates.purchaseWhere || updates.purchase_where || null,
+      comments: updates.comments || null,
+    };
+    const { error } = await supabase.from('tackle_items').update(dbUpdates).eq('id', id);
     if (!error) { setTackleItems(p => p.map(i => i.id===id ? {...i,...updates} : i)); showToast('Item updated!'); }
+    else { console.error('Update error:', error); showToast('Failed to update: ' + error.message, 'error'); }
   };
 
   const handleDeleteItem = async (id) => {
