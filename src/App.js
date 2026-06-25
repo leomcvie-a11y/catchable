@@ -1324,6 +1324,77 @@ function TackleScreen({ user, categories, items, onAddCategory, onAddItem, onUpd
   </div>;
 }
 
+// ── CATCH DETAIL VIEW ────────────────────────────────────────────────────
+function CatchDetailView({ catch_: c, onBack, onUpdateCatch, onDone }) {
+  const [editingCatch, setEditingCatch] = useState(false);
+  const [editForm, setEditForm] = useState({ ...c });
+
+  if (editingCatch) return (
+    <div>
+      <button className="back-btn" onClick={() => setEditingCatch(false)}>← Cancel Edit</button>
+      <div style={{ padding:'0 16px' }}>
+        <div style={{ maxWidth:560, margin:'0 auto' }}>
+          <div style={{ fontSize:17, fontWeight:800, marginBottom:20 }}>Edit Catch</div>
+          {[['species','Species'],['weight_lb','Weight (lb)'],['weight_oz','Weight (oz)'],['length_cm','Length (cm)'],['length_in','Length (in)'],['bait','Bait'],['lure','Lure'],['location','Location']].map(([k,l]) => (
+            <div className="form-group" key={k}>
+              <label className="form-label">{l}</label>
+              <input className="form-input" value={editForm[k]||''} onChange={e => setEditForm(f=>({...f,[k]:e.target.value}))} />
+            </div>
+          ))}
+          <div className="form-group">
+            <label className="form-label">Notes</label>
+            <textarea className="form-textarea" value={editForm.notes||''} onChange={e => setEditForm(f=>({...f,notes:e.target.value}))} />
+          </div>
+          <div style={{ display:'flex', gap:10, marginBottom:24 }}>
+            <button className="btn-secondary" style={{ flex:1, padding:'13px' }} onClick={() => setEditingCatch(false)}>Cancel</button>
+            <button className="btn-primary" style={{ flex:1, padding:'13px' }} onClick={async () => {
+              await onUpdateCatch(c.id, editForm);
+              onDone();
+            }}>Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <button className="back-btn" onClick={onBack}>← Back to Catches</button>
+      <div style={{ padding:'0 16px' }}>
+        <div style={{ maxWidth:560, margin:'0 auto' }}>
+          <div className="catch-detail-img">
+            {c.photo ? <img src={c.photo} alt={c.species} /> : <FishImg species={c.species} style={{width:'100%',height:'100%',objectFit:'cover'}} />}
+          </div>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+            <div style={{ fontSize:22, fontWeight:800, color:'var(--dark)' }}>{c.species}</div>
+            <button className="edit-btn" onClick={() => { setEditForm({...c}); setEditingCatch(true); }}>Edit</button>
+          </div>
+          {[
+            ['Weight', `${c.weight_lb||'—'}lb${c.weight_oz?' '+c.weight_oz+'oz':''}`],
+            ['Length', c.length_cm ? `${c.length_cm}cm${c.length_in?' / '+c.length_in+'in':''}` : null],
+            ['Bait', c.bait||null],
+            ['Lure', c.lure||null],
+            ['Location', c.location||null],
+            ['Date', new Date(c.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})],
+          ].filter(([,val]) => val).map(([label, val]) => (
+            <div className="catch-detail-row" key={label}>
+              <div className="catch-detail-label">{label}</div>
+              <div className="catch-detail-val">{val}</div>
+            </div>
+          ))}
+          {c.notes && (
+            <div style={{ marginTop:16, padding:16, background:'var(--bg)', borderRadius:12, border:'1px solid var(--light)' }}>
+              <div style={{ fontSize:12, fontWeight:700, color:'var(--mid)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>Notes</div>
+              <div style={{ fontSize:14, color:'var(--dark)', lineHeight:1.6 }}>{c.notes}</div>
+            </div>
+          )}
+          <div style={{ height:24 }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── STATS SCREEN ──────────────────────────────────────────────────────────
 function StatsScreen({ catches, sessions, user, onUpdateCatch }) {
   const [view, setView] = useState('main');
@@ -1333,66 +1404,12 @@ function StatsScreen({ catches, sessions, user, onUpdateCatch }) {
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 'Angler';
 
   if (view === 'catchDetail' && selectedCatch) {
-    const c = selectedCatch;
-    const [editingCatch, setEditingCatch] = useState(false);
-    const [editForm, setEditForm] = useState({ ...c });
-    return <div>
-      <button className="back-btn" onClick={() => { setView('catches'); setSelectedCatch(null); }}>← Back to Catches</button>
-      <div style={{ padding:'0 16px' }}>
-        {editingCatch ? (
-          <div style={{ maxWidth:560, margin:'0 auto' }}>
-            <div style={{ fontSize:17, fontWeight:800, marginBottom:20 }}>Edit Catch</div>
-            <div className="form-group"><label className="form-label">Species</label><input className="form-input" value={editForm.species||''} onChange={e => setEditForm(f=>({...f,species:e.target.value}))}/></div>
-            <div className="form-group"><label className="form-label">Weight (lb)</label><input className="form-input" value={editForm.weight_lb||''} onChange={e => setEditForm(f=>({...f,weight_lb:e.target.value}))}/></div>
-            <div className="form-group"><label className="form-label">Weight (oz)</label><input className="form-input" value={editForm.weight_oz||''} onChange={e => setEditForm(f=>({...f,weight_oz:e.target.value}))}/></div>
-            <div className="form-group"><label className="form-label">Length (cm)</label><input className="form-input" value={editForm.length_cm||''} onChange={e => setEditForm(f=>({...f,length_cm:e.target.value}))}/></div>
-            <div className="form-group"><label className="form-label">Bait</label><input className="form-input" value={editForm.bait||''} onChange={e => setEditForm(f=>({...f,bait:e.target.value}))}/></div>
-            <div className="form-group"><label className="form-label">Lure</label><input className="form-input" value={editForm.lure||''} onChange={e => setEditForm(f=>({...f,lure:e.target.value}))}/></div>
-            <div className="form-group"><label className="form-label">Location</label><input className="form-input" value={editForm.location||''} onChange={e => setEditForm(f=>({...f,location:e.target.value}))}/></div>
-            <div className="form-group"><label className="form-label">Notes</label><textarea className="form-textarea" value={editForm.notes||''} onChange={e => setEditForm(f=>({...f,notes:e.target.value}))}/></div>
-            <div style={{ display:'flex', gap:10, marginBottom:24 }}>
-              <button className="btn-secondary" style={{ flex:1, padding:'13px' }} onClick={() => setEditingCatch(false)}>Cancel</button>
-              <button className="btn-primary" style={{ flex:1, padding:'13px' }} onClick={async () => {
-                await onUpdateCatch(c.id, editForm);
-                setEditingCatch(false);
-                setView('catches');
-                setSelectedCatch(null);
-              }}>Save Changes</button>
-            </div>
-          </div>
-        ) : (
-          <div style={{ maxWidth:560, margin:'0 auto' }}>
-            <div className="catch-detail-img">
-              {c.photo ? <img src={c.photo} alt={c.species} /> : <FishImg species={c.species} style={{width:'100%',height:'100%',objectFit:'cover'}} />}
-            </div>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
-              <div style={{ fontSize:22, fontWeight:800, color:'var(--dark)' }}>{c.species}</div>
-              <button className="edit-btn" onClick={() => { setEditForm({...c}); setEditingCatch(true); }}>Edit</button>
-            </div>
-            {[
-              ['Weight', `${c.weight_lb||'—'}lb ${c.weight_oz?c.weight_oz+'oz':''}`],
-              ['Length', c.length_cm ? `${c.length_cm}cm${c.length_in?' / '+c.length_in+'in':''}` : '—'],
-              ['Bait', c.bait||'—'],
-              ['Lure', c.lure||'—'],
-              ['Location', c.location||'—'],
-              ['Date', new Date(c.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})],
-            ].map(([label, val]) => val && val !== '—' ? (
-              <div className="catch-detail-row" key={label}>
-                <div className="catch-detail-label">{label}</div>
-                <div className="catch-detail-val">{val}</div>
-              </div>
-            ) : null)}
-            {c.notes && (
-              <div style={{ marginTop:16, padding:16, background:'var(--bg)', borderRadius:12, border:'1px solid var(--light)' }}>
-                <div style={{ fontSize:12, fontWeight:700, color:'var(--mid)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>Notes</div>
-                <div style={{ fontSize:14, color:'var(--dark)', lineHeight:1.6 }}>{c.notes}</div>
-              </div>
-            )}
-            <div style={{ height:24 }} />
-          </div>
-        )}
-      </div>
-    </div>;
+    return <CatchDetailView
+      catch_={selectedCatch}
+      onBack={() => { setView('catches'); setSelectedCatch(null); }}
+      onUpdateCatch={onUpdateCatch}
+      onDone={() => { setView('catches'); setSelectedCatch(null); }}
+    />;
   }
 
   if (view === 'catches') return <div>
