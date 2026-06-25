@@ -378,6 +378,35 @@ const styles = `
   .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--mid); line-height: 1; }
 
   /* TOAST */
+  /* FEED PREVIEW */
+  .feed-preview-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .feed-preview-inner { background: var(--white); border-radius: 24px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+  .feed-preview-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--light); }
+  .feed-preview-title { font-size: 16px; font-weight: 700; color: var(--dark); }
+
+  /* PUBLISH TOGGLE */
+  .publish-toggle { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; background: var(--white); border: 2px solid var(--light); border-radius: 14px; margin-bottom: 20px; cursor: pointer; transition: border-color 0.2s; }
+  .publish-toggle.on { border-color: var(--blue); background: rgba(59,158,232,0.04); }
+  .publish-toggle-label { font-size: 14px; font-weight: 600; color: var(--dark); }
+  .publish-toggle-sub { font-size: 12px; color: var(--mid); margin-top: 2px; }
+
+  /* CATCH DETAIL */
+  .catch-detail-img { width: 100%; height: 240px; border-radius: 16px; overflow: hidden; background: #E8F4FD; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+  .catch-detail-img img { width: 100%; height: 100%; object-fit: cover; }
+  .catch-detail-row { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--light); }
+  .catch-detail-label { font-size: 12px; font-weight: 700; color: var(--mid); text-transform: uppercase; letter-spacing: 0.06em; width: 80px; flex-shrink: 0; }
+  .catch-detail-val { font-size: 14px; color: var(--dark); font-weight: 500; flex: 1; }
+
+  /* CENTRED FORM CONTAINER */
+  .form-centred { max-width: 560px; margin: 0 auto; padding: 0 16px; }
+  @media (min-width: 768px) { .form-centred { padding: 0 32px; } }
+
+  /* TACKLE EDIT MODE */
+  .tackle-edit-overlay { position: absolute; inset: 0; background: rgba(59,158,232,0.08); border-radius: 18px; display: flex; align-items: center; justify-content: center; gap: 8px; opacity: 0; transition: opacity 0.2s; }
+  .tackle-cat-wrap { position: relative; }
+  .tackle-cat-wrap:hover .tackle-edit-overlay { opacity: 1; }
+  .tackle-edit-btn-sm { padding: 6px 14px; border: none; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
+
   .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--blue); color: white; font-weight: 700; font-size: 15px; padding: 14px 28px; border-radius: 20px; box-shadow: 0 8px 32px rgba(59,158,232,0.4); opacity: 0; transition: opacity 0.3s, transform 0.3s; pointer-events: none; white-space: nowrap; z-index: 999; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .toast.error { background: var(--red); box-shadow: 0 8px 32px rgba(239,68,68,0.4); }
@@ -418,248 +447,9 @@ const WMO_CODES = {0:'Clear',1:'Mainly Clear',2:'Partly Cloudy',3:'Overcast',45:
 const WMO_ICONS = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',99:'⛈️'};
 const WIND_DIRS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 
-// ── SEED COMMUNITY DATA (Summer 2025 — June/July catches) ────────────────
-// Real summer species for England — bass, mackerel, pollock, wrasse, perch
-const SEED_ANGLERS = [
-  {
-    id: 'seed1',
-    username: 'Sam_Chesil',
-    initials: 'SC',
-    location: 'Chesil Beach, Dorset',
-    lat: 50.613, lng: -2.456,
-    species: 'Sea Bass',
-    weight_lb: '6', weight_oz: '12',
-    bait: 'Sandeel',
-    notes: 'Brilliant summer bass session at Chesil at first light. Sandeels fished on a 2-hook flapper just beyond the shingle drop-off. Water was gin clear, fish came in waves with the tide. Three fish landed, two returned.',
-    tags: ['SeaBass', 'ChesilBeach', 'SummerBass', 'Sandeel'],
-    dist: 4.2,
-    photo: 'https://inaturalist-open-data.s3.amazonaws.com/photos/242886/medium.jpg',
-    created_at: new Date(Date.now() - 3*3600000).toISOString(),
-    likes: 61,
-    comments: 14,
-  },
-  {
-    id: 'seed2',
-    username: 'MackerelMike',
-    initials: 'MM',
-    location: 'Brighton Marina, East Sussex',
-    lat: 50.814, lng: -0.101,
-    species: 'Mackerel',
-    weight_lb: '1', weight_oz: '14',
-    bait: 'Feathers',
-    notes: 'Mackerel going absolutely mad off the marina wall this afternoon. Took 15 on feathers inside 45 mins then slowed right off as the tide turned. Water temp must be up — biggest shoals I have seen here in years.',
-    tags: ['Mackerel', 'Brighton', 'SummerFishing', 'Feathers'],
-    dist: 12.3,
-    photo: 'https://inaturalist-open-data.s3.amazonaws.com/photos/310257/medium.jpg',
-    created_at: new Date(Date.now() - 6*3600000).toISOString(),
-    likes: 44,
-    comments: 8,
-  },
-  {
-    id: 'seed3',
-    username: 'CornishKev',
-    initials: 'CK',
-    location: 'Penzance Harbour, Cornwall',
-    lat: 50.119, lng: -5.537,
-    species: 'Pollock',
-    weight_lb: '4', weight_oz: '8',
-    bait: 'Fiiish Black Minnow',
-    notes: 'Evening session off the harbour wall paid off big time. Pollock stacked up tight to the structure as the light dropped. Black Minnow on a 10g head, slow retrieve with a pause — took it on the drop every time. Proper summer fishing.',
-    tags: ['Pollock', 'Cornwall', 'Penzance', 'LureFishing'],
-    dist: 156,
-    photo: 'https://inaturalist-open-data.s3.amazonaws.com/photos/2960933/medium.jpg',
-    created_at: new Date(Date.now() - 18*3600000).toISOString(),
-    likes: 52,
-    comments: 11,
-  },
-  {
-    id: 'seed4',
-    username: 'WrightWrasse',
-    initials: 'WW',
-    location: 'Lyme Regis, Dorset',
-    lat: 50.723, lng: -2.938,
-    species: 'Wrasse',
-    weight_lb: '3', weight_oz: '4',
-    bait: 'Peeler Crab',
-    notes: 'Cracking ballan wrasse from the rocks at Lyme. These fish are absolutely scrapping in the warm June water. Float fished peeler crab tight to the kelp edge — had six fish in two hours. All returned safely.',
-    tags: ['Wrasse', 'LymeRegis', 'RockFishing', 'SummerSession'],
-    dist: 28.7,
-    photo: 'https://inaturalist-open-data.s3.amazonaws.com/photos/57620/medium.jpg',
-    created_at: new Date(Date.now() - 26*3600000).toISOString(),
-    likes: 38,
-    comments: 7,
-  },
-  {
-    id: 'seed5',
-    username: 'TrentAngler',
-    initials: 'TA',
-    location: 'River Trent, Nottinghamshire',
-    lat: 52.954, lng: -1.158,
-    species: 'Barbel',
-    weight_lb: '9', weight_oz: '6',
-    bait: 'Pellets',
-    notes: 'Summer barbel in perfect condition on the Trent. Fished a Method feeder with 6mm pellets hard on the crease where the current breaks behind a far bank tree. Took just 20 minutes before this powerhouse smashed the rod tip round. Released in perfect condition.',
-    tags: ['Barbel', 'RiverTrent', 'SummerBarbel', 'FeederFishing'],
-    dist: 142,
-    photo: 'https://inaturalist-open-data.s3.amazonaws.com/photos/7702/medium.jpg',
-    created_at: new Date(Date.now() - 40*3600000).toISOString(),
-    likes: 89,
-    comments: 23,
-  },
-];
+// ── SEED DATA REMOVED ──────────────────────────────────────────────────
+const SEED_PINS = [];
 
-const SEED_PINS = SEED_ANGLERS.map(a => ({
-  lat: a.lat, lng: a.lng,
-  label: `${a.username} — ${a.species} ${a.weight_lb}lb`,
-  color: '#10B981',
-}));
-
-// ── ICONS ─────────────────────────────────────────────────────────────────
-const Icon = {
-  Home: () => <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
-  Feed: () => <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-  Map: () => <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>,
-  Log: () => <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>,
-  Tackle: () => <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>,
-  Stats: () => <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
-  Account: () => <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-  Logout: () => <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-  Back: () => <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>,
-  Camera: () => <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
-  Search: () => <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
-  Pin: () => <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" width="22" height="22"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
-  Fish: () => <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18.5 12c0 .5-.1 1-.3 1.5L21 17l-3.5.5-.5 3-2.5-2.5c-.5.2-1 .3-1.5.3-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5z"/><path d="M3 7s1 2 1 5-1 5-1 5"/><path d="M7 6s.5 2 .5 6S7 18 7 18"/></svg>,
-  Anchor: () => <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="21"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>,
-};
-
-// ── HELPERS ───────────────────────────────────────────────────────────────
-function FishImg({ species, style, className }) {
-  const [err, setErr] = useState(false);
-  const src = FISH_PHOTOS[species];
-  if (!src || err) return <div style={{ width:'100%', height:'100%', background:'linear-gradient(135deg,#E8F4FD,#C8E8F8)', display:'flex', alignItems:'center', justifyContent:'center', ...style }}><span style={{fontSize:32}}>🐟</span></div>;
-  return <img src={src} alt={species} style={style} className={className} onError={() => setErr(true)} />;
-}
-
-function PhotoUpload({ value, onChange, label = 'Add Photo', height = 200 }) {
-  const ref = useRef(null);
-  const handleFile = e => {
-    const file = e.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => onChange(ev.target.result);
-    reader.readAsDataURL(file);
-  };
-  return (
-    <div className="form-group">
-      {label && <label className="form-label">{label}</label>}
-      <div className="photo-upload" onClick={() => ref.current.click()}>
-        {value ? (
-          <div className="photo-preview" style={{ height }}>
-            <img src={value} alt="preview" />
-            <button className="photo-remove" onClick={e => { e.stopPropagation(); onChange(null); }}>×</button>
-          </div>
-        ) : (
-          <div className="photo-upload-empty" style={{ height }}>
-            <div className="photo-upload-icon"><span style={{fontSize:32}}>📷</span></div>
-            <div className="photo-upload-text">{label}</div>
-            <div className="photo-upload-sub">Tap to take a photo or choose from gallery</div>
-          </div>
-        )}
-      </div>
-      <input ref={ref} type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={handleFile} />
-    </div>
-  );
-}
-
-function SearchDropdown({ label, seaOptions, riverOptions, value, onChange, customItems = [] }) {
-  const [query, setQuery] = useState('');
-  const [open, setOpen] = useState(false);
-  const [newCustom, setNewCustom] = useState('');
-  const [customs, setCustoms] = useState(customItems);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, []);
-
-  const filter = items => items.filter(i => i.toLowerCase().includes(query.toLowerCase()));
-  const fSea = filter(seaOptions), fRiver = filter(riverOptions), fCustom = filter(customs);
-  const hasResults = fSea.length || fRiver.length || fCustom.length;
-
-  const select = item => { onChange(item); setQuery(''); setOpen(false); };
-  const addCustom = () => {
-    const v = (newCustom || query).trim();
-    if (!v) return;
-    if (!customs.includes(v)) setCustoms(c => [...c, v]);
-    select(v); setNewCustom('');
-  };
-
-  return (
-    <div className="form-group" ref={ref}>
-      <label className="form-label">{label}</label>
-      <div className="search-dropdown-wrap">
-        <span className="search-icon-pos">🔍</span>
-        <input
-          className="search-dropdown-input"
-          placeholder={`Search ${label.toLowerCase()}...`}
-          value={value || query}
-          onChange={e => { setQuery(e.target.value); if (value) onChange(''); setOpen(true); }}
-          onFocus={() => setOpen(true)}
-        />
-        {(value || query) && <button className="search-clear" onClick={() => { onChange(''); setQuery(''); }}>×</button>}
-      </div>
-      {value && <div className="selected-badge">{value}<button className="selected-badge-x" onClick={() => onChange('')}>×</button></div>}
-      {open && (
-        <div className="dropdown-list">
-          {fCustom.length > 0 && <><div className="dropdown-group-label">My Custom</div>{fCustom.map(i => <div key={i} className={`dropdown-item${value===i?' selected':''}`} onClick={() => select(i)}>{i}</div>)}</>}
-          {fSea.length > 0 && <><div className="dropdown-group-label">Sea</div>{fSea.map(i => <div key={i} className={`dropdown-item${value===i?' selected':''}`} onClick={() => select(i)}>{i}</div>)}</>}
-          {fRiver.length > 0 && <><div className="dropdown-group-label">River & Coarse</div>{fRiver.map(i => <div key={i} className={`dropdown-item${value===i?' selected':''}`} onClick={() => select(i)}>{i}</div>)}</>}
-          {!hasResults && <div style={{ padding:'10px 14px' }}>
-            <div style={{ fontSize:13, color:'var(--mid)', marginBottom:8 }}>No results for "{query}"</div>
-          </div>}
-          <div style={{ padding:'8px 14px', borderTop:'1px solid var(--light)' }}>
-            <div style={{ display:'flex', gap:6 }}>
-              <input className="form-input" style={{ flex:1, padding:'9px 12px', fontSize:13 }} placeholder={`Add your own...`} value={newCustom} onChange={e => setNewCustom(e.target.value)} onKeyDown={e => e.key==='Enter' && addCustom()} />
-              <button className="btn-primary" style={{ padding:'9px 14px', fontSize:13, flex:'none' }} onClick={addCustom}>+ Add</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── LEAFLET MAP ───────────────────────────────────────────────────────────
-function LeafletMap({ height='420px', onPinDrop=null, showControls=true, catchPins=[], communitySpotPins=[], circleRadius=2000, defaultFilter='my' }) {
-  const mapRef = useRef(null);
-  const leafletMap = useRef(null);
-  const tileRef = useRef(null);
-  const labelsRef = useRef(null);
-  const userMarkerRef = useRef(null);
-  const pinMarkersRef = useRef([]);
-  const draggableRef = useRef(null);
-  const circleRef = useRef(null);
-  const [mapView, setMapView] = useState('Map');
-  const [pinMode, setPinMode] = useState(defaultFilter);
-  const [userPos, setUserPos] = useState(null);
-  const [located, setLocated] = useState(false);
-  const circleRadiusRef = useRef(circleRadius);
-
-  useEffect(() => { circleRadiusRef.current = circleRadius; if (circleRef.current) circleRef.current.setRadius(circleRadius); }, [circleRadius]);
-
-  const TACKLE_SHOPS = [
-    { lat:51.5, lng:-0.12, label:'London Angling Centre' },
-    { lat:50.82, lng:-0.14, label:'Brighton Angling' },
-    { lat:53.96, lng:-1.08, label:'York Fishing Tackle' },
-    { lat:50.61, lng:-2.46, label:'Chesil Bait & Tackle' },
-    { lat:51.38, lng:-2.36, label:'Bath Angling' },
-    { lat:52.63, lng:1.30, label:'Norfolk Angling' },
-  ];
-
-  const makeIcon = (color, size=14) => {
-    const L = window.L;
-    return L.divIcon({ className:'', html:`<div style="width:${size}px;height:${size}px;background:${color};border-radius:50%;border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.25)"></div>`, iconSize:[size,size], iconAnchor:[size/2,size/2] });
   };
 
   useEffect(() => {
@@ -1034,101 +824,6 @@ function HomeScreen({ onLog, catches, user }) {
   );
 }
 
-// ── SEED POST CARD ───────────────────────────────────────────────────────
-function SeedPostCard({ p }) {
-  const [liked, setLiked] = useState(false);
-  const [likes, setLikes] = useState(p.likes);
-  const [imgErr, setImgErr] = useState(false);
-
-  const timeAgo = () => {
-    const diff = Date.now() - new Date(p.created_at).getTime();
-    const h = Math.floor(diff / 3600000);
-    if (h < 1) return 'Just now';
-    if (h < 24) return `${h}h ago`;
-    return `${Math.floor(h/24)}d ago`;
-  };
-
-  const weightStr = `${p.weight_lb}lb ${p.weight_oz ? p.weight_oz + 'oz' : ''}`.trim();
-
-  return (
-    <div className="feed-post">
-      {/* Header */}
-      <div className="feed-post-header">
-        <div className="feed-avatar" style={{ background:'linear-gradient(135deg, #3B9EE8, #1a5fa8)', fontSize:15, fontWeight:800, letterSpacing:0.5 }}>
-          {p.initials}
-        </div>
-        <div style={{ flex:1, minWidth:0 }}>
-          <div className="feed-username">{p.username}</div>
-          <div className="feed-location">
-            <span style={{ marginRight:6 }}>📍</span>
-            {p.location}
-          </div>
-        </div>
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:5, flexShrink:0 }}>
-          <div className="feed-badge">{weightStr} {p.species}</div>
-          <span className="dist-badge">{p.dist}mi away</span>
-        </div>
-      </div>
-
-      {/* Photo */}
-      <div className="feed-img-area" style={{ height:280, position:'relative' }}>
-        {!imgErr && p.photo ? (
-          <img
-            src={p.photo}
-            alt={`${p.species} caught at ${p.location}`}
-            style={{ width:'100%', height:'100%', objectFit:'cover' }}
-            onError={() => setImgErr(true)}
-          />
-        ) : (
-          <FishImg species={p.species} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-        )}
-        {/* Time overlay */}
-        <div style={{ position:'absolute', bottom:12, right:12, background:'rgba(0,0,0,0.55)', color:'white', fontSize:11, fontWeight:600, padding:'4px 10px', borderRadius:20, backdropFilter:'blur(4px)' }}>
-          {timeAgo()}
-        </div>
-      </div>
-
-      {/* Body */}
-      <div className="feed-post-body">
-        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
-          <span style={{ fontSize:13, fontWeight:700, color:'var(--dark)' }}>{p.username}</span>
-          <span style={{ fontSize:13, color:'var(--mid)' }}>{p.notes}</span>
-        </div>
-        <div className="feed-tags">
-          {p.tags.map(t => <span key={t} className="feed-tag">#{t}</span>)}
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="feed-actions">
-        <button
-          className={`feed-action${liked?' liked':''}`}
-          onClick={() => { setLiked(!liked); setLikes(l => liked ? l-1 : l+1); }}
-        >
-          <svg fill={liked?'var(--red)':'none'} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
-          {likes}
-        </button>
-        <button className="feed-action">
-          <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-          {p.comments}
-        </button>
-        <button className="feed-action">
-          <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-          </svg>
-          Share
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ── FEED SCREEN ───────────────────────────────────────────────────────────
 function FeedScreen({ catches, user }) {
   const [tab, setTab] = useState('following');
@@ -1276,12 +971,60 @@ function MapScreen({ catchPins, spots, onAddSpot }) {
   );
 }
 
+// ── FEED PREVIEW MODAL ───────────────────────────────────────────────────
+function FeedPreviewModal({ form, user, onClose }) {
+  const name = user?.user_metadata?.full_name || 'You';
+  const initials = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const weightStr = `${form.weight_lb||'?'}lb${form.weight_oz?' '+form.weight_oz+'oz':''}`;
+  return (
+    <div className="feed-preview-overlay" onClick={e => { if(e.target===e.currentTarget) onClose(); }}>
+      <div className="feed-preview-inner">
+        <div className="feed-preview-header">
+          <div className="feed-preview-title">Feed Preview</div>
+          <button onClick={onClose} style={{ background:'none', border:'none', fontSize:24, cursor:'pointer', color:'var(--mid)', lineHeight:1 }}>×</button>
+        </div>
+        <div className="feed-post" style={{ margin:0, borderRadius:0, boxShadow:'none', border:'none' }}>
+          <div className="feed-post-header">
+            <div className="feed-avatar" style={{ background:'linear-gradient(135deg,#3B9EE8,#1a5fa8)', fontSize:15, fontWeight:800 }}>{initials}</div>
+            <div>
+              <div className="feed-username">{name}</div>
+              <div className="feed-location">{form.location || 'Location not set'}</div>
+            </div>
+            <div className="feed-badge">{weightStr} {form.species||'Species'}</div>
+          </div>
+          {form.photo ? (
+            <div className="feed-img-area" style={{ height:260 }}>
+              <img src={form.photo} alt={form.species} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+            </div>
+          ) : (
+            <div className="feed-img-area" style={{ height:200, background:'var(--bg)' }}>
+              <div style={{ textAlign:'center', color:'var(--mid)' }}>
+                <div style={{ fontSize:40, marginBottom:8 }}>📷</div>
+                <div style={{ fontSize:13 }}>No photo added</div>
+              </div>
+            </div>
+          )}
+          <div className="feed-post-body">
+            <div className="feed-post-text">{form.notes || `${form.species||'Fish'} caught${form.bait?' on '+form.bait:''}.`}</div>
+            <div className="feed-tags">
+              {form.species && <span className="feed-tag">#{form.species.replace(/ /g,'')}</span>}
+              {form.bait && <span className="feed-tag">#{form.bait.replace(/ /g,'')}</span>}
+              {form.location && <span className="feed-tag">#{form.location.split(',')[0].replace(/ /g,'')}</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── LOG SCREEN ────────────────────────────────────────────────────────────
-function LogScreen({ onSaved, customBaits, customLures, onAddCustomBait, onAddCustomLure }) {
-  const [form, setForm] = useState({ species:'', weight_lb:'', weight_oz:'', length_cm:'', length_in:'', bait:'', lure:'', location:'', notes:'', photo:null, privacy:'Approximate' });
+function LogScreen({ onSaved, customBaits, customLures, onAddCustomBait, onAddCustomLure, user }) {
+  const [form, setForm] = useState({ species:'', weight_lb:'', weight_oz:'', length_cm:'', length_in:'', bait:'', lure:'', location:'', notes:'', photo:null, privacy:'Approximate', publishToFeed:false });
   const [pin, setPin] = useState(null);
   const [circleRadius, setCircleRadius] = useState(2000);
   const [saving, setSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const set = (k,v) => setForm(f => ({...f,[k]:v}));
 
   const handleSave = async () => {
@@ -1293,9 +1036,21 @@ function LogScreen({ onSaved, customBaits, customLures, onAddCustomBait, onAddCu
 
   return (
     <div>
+      {showPreview && <FeedPreviewModal form={form} user={user} onClose={() => setShowPreview(false)} />}
       <div className="section-header" style={{ paddingTop:24 }}><span className="section-title">Log a Catch</span></div>
       <div className="page-pad">
-        <PhotoUpload value={form.photo} onChange={v => set('photo',v)} label="Catch Photo" />
+        <div className="form-group">
+          <label className="form-label">Catch Photo</label>
+          <PhotoUpload value={form.photo} onChange={v => set('photo',v)} label="Catch Photo" />
+          {form.photo && (
+            <button
+              onClick={() => setShowPreview(true)}
+              style={{ marginTop:8, width:'100%', padding:'10px', border:'2px solid var(--blue)', borderRadius:12, background:'rgba(59,158,232,0.06)', color:'var(--blue)', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'Inter,sans-serif' }}
+            >
+              Preview how this will look in the feed
+            </button>
+          )}
+        </div>
         <SearchDropdown label="Species" seaOptions={SEA_SPECIES} riverOptions={RIVER_SPECIES} value={form.species} onChange={v => set('species',v)} />
         <div className="form-group">
           <label className="form-label">Weight</label>
@@ -1337,6 +1092,18 @@ function LogScreen({ onSaved, customBaits, customLures, onAddCustomBait, onAddCu
           </div>
           <div className={`map-hint${pin?' confirmed':''}`}>{pin ? `Pin set — drag to adjust position` : `Tap the map to ${form.privacy==='Approximate'?'place your zone':'drop your exact pin'}`}</div>
         </div>
+        <div
+          className={`publish-toggle${form.publishToFeed?' on':''}`}
+          onClick={() => set('publishToFeed', !form.publishToFeed)}
+        >
+          <div>
+            <div className="publish-toggle-label">Publish to community feed</div>
+            <div className="publish-toggle-sub">{form.publishToFeed ? 'Your catch will appear in the Explore feed' : 'Keep this catch private — only visible to you'}</div>
+          </div>
+          <button className={`toggle-btn ${form.publishToFeed?'on':'off'}`} onClick={e => { e.stopPropagation(); set('publishToFeed', !form.publishToFeed); }}>
+            <div className="toggle-knob"/>
+          </button>
+        </div>
         <button className="btn-primary full" disabled={saving} onClick={handleSave}>{saving ? 'Saving...' : 'Save Catch'}</button>
         <div style={{ height:24 }} />
       </div>
@@ -1345,12 +1112,15 @@ function LogScreen({ onSaved, customBaits, customLures, onAddCustomBait, onAddCu
 }
 
 // ── TACKLE SCREEN ─────────────────────────────────────────────────────────
-function TackleScreen({ user, categories, items, onAddCategory, onAddItem, onUpdateItem, onDeleteItem }) {
+function TackleScreen({ user, categories, items, onAddCategory, onAddItem, onUpdateItem, onDeleteItem, onUpdateCategory }) {
   const [selectedCat, setSelectedCat] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showAddCat, setShowAddCat] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editingCatId, setEditingCatId] = useState(null);
+  const [editCatForm, setEditCatForm] = useState({ name:'', emoji:'' });
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [newCat, setNewCat] = useState({ name:'', emoji:'' });
   const [newItem, setNewItem] = useState({ name:'', brand:'', price:'', purchaseDate:'', purchaseWhere:'', comments:'', photo:null });
@@ -1460,8 +1230,8 @@ function TackleScreen({ user, categories, items, onAddCategory, onAddItem, onUpd
       </div>
     </div>
     {showAddItem && (
-      <div className="page-pad"><div style={formBox}>
-        <div style={{ fontSize:16, fontWeight:700, marginBottom:16 }}>Add New Item</div>
+      <div style={{ padding:'0 16px', marginTop:16 }}><div style={{ maxWidth:480, margin:'0 auto', background:'var(--white)', borderRadius:18, padding:24, boxShadow:'var(--shadow2)', border:'1px solid var(--light)' }}>
+        <div style={{ fontSize:17, fontWeight:800, marginBottom:20 }}>Add New Item</div>
         <PhotoUpload value={newItem.photo} onChange={v => setNewItem(n => ({...n, photo:v}))} label="Item Photo" height={160} />
         {[['name','Name','e.g. Daiwa Ninja X'],['brand','Brand','e.g. Daiwa'],['price','Price paid (£)','e.g. 89.99'],['purchaseDate','Date of purchase','e.g. 12 Mar 2024'],['purchaseWhere','Purchased from','e.g. Angling Direct']].map(([k,l,p]) =>
           <div className="form-group" key={k}><label className="form-label">{l}</label><input className="form-input" placeholder={p} value={newItem[k]} onChange={e => setNewItem(n => ({...n,[k]:e.target.value}))} /></div>
@@ -1480,7 +1250,12 @@ function TackleScreen({ user, categories, items, onAddCategory, onAddItem, onUpd
   return <div>
     <div className="section-header" style={{ paddingTop:24 }}>
       <span className="section-title">Tackle Box</span>
-      <button className="section-link" onClick={() => setShowAddCat(v => !v)}>+ Add</button>
+      <div style={{ display:'flex', gap:12, alignItems:'center' }}>
+        <button className="section-link" onClick={() => { setEditMode(v => !v); setShowAddCat(false); setEditingCatId(null); }}>
+          {editMode ? 'Done' : 'Edit'}
+        </button>
+        <button className="section-link" onClick={() => { setShowAddCat(v => !v); setEditMode(false); }}>+ Add</button>
+      </div>
     </div>
     {categories.length === 0 ? (
       <div className="empty-state">
@@ -1492,47 +1267,142 @@ function TackleScreen({ user, categories, items, onAddCategory, onAddItem, onUpd
       <div className="tackle-grid">
         {categories.map(c => {
           const count = items.filter(i=>i.category_id===c.id).length;
+          const isEditing = editingCatId === c.id;
           return (
-            <div className="tackle-cat" key={c.id} onClick={() => setSelectedCat(c.id)}>
-              <div className="tackle-cat-img">
-                <div style={{ fontSize:36 }}>{CAT_ICONS[c.name] || c.emoji || '📦'}</div>
+            <div key={c.id} style={{ position:'relative' }}>
+              <div className="tackle-cat" onClick={() => !editMode && setSelectedCat(c.id)} style={{ cursor: editMode ? 'default' : 'pointer' }}>
+                <div className="tackle-cat-img">
+                  <div style={{ fontSize:36 }}>{CAT_ICONS[c.name] || c.emoji || '📦'}</div>
+                </div>
+                <div className="tackle-name">{c.name}</div>
+                <div className="tackle-count">{count} {count===1?'item':'items'}</div>
+                <div className="tackle-bar"><div className="tackle-bar-fill" style={{ width:`${Math.min(100,(count/8)*100)}%` }} /></div>
               </div>
-              <div className="tackle-name">{c.name}</div>
-              <div className="tackle-count">{count} {count===1?'item':'items'}</div>
-              <div className="tackle-bar"><div className="tackle-bar-fill" style={{ width:`${Math.min(100,(count/8)*100)}%` }} /></div>
+              {editMode && !isEditing && (
+                <button
+                  onClick={() => { setEditingCatId(c.id); setEditCatForm({ name:c.name, emoji:c.emoji||CAT_ICONS[c.name]||'📦' }); }}
+                  style={{ position:'absolute', top:8, right:8, padding:'4px 12px', border:'2px solid var(--blue)', borderRadius:20, background:'white', color:'var(--blue)', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'Inter,sans-serif' }}
+                >
+                  Edit
+                </button>
+              )}
             </div>
           );
         })}
       </div>
+
+      {/* Edit category form */}
+      {editingCatId && (
+        <div style={{ padding:'16px 16px 0' }}>
+          <div style={{ maxWidth:480, margin:'0 auto', background:'var(--white)', borderRadius:18, padding:24, boxShadow:'var(--shadow2)', border:'1px solid var(--light)' }}>
+            <div style={{ fontSize:17, fontWeight:800, marginBottom:20, color:'var(--dark)' }}>Edit Category</div>
+            <div className="form-group"><label className="form-label">Category name</label><input className="form-input" value={editCatForm.name} onChange={e => setEditCatForm(f => ({...f, name:e.target.value}))} /></div>
+            <div className="form-group"><label className="form-label">Emoji icon</label><input className="form-input" value={editCatForm.emoji} onChange={e => setEditCatForm(f => ({...f, emoji:e.target.value}))} /></div>
+            <div style={{ display:'flex', gap:10 }}>
+              <button className="btn-secondary" style={{ flex:1, padding:'13px' }} onClick={() => setEditingCatId(null)}>Cancel</button>
+              <button className="btn-primary" style={{ flex:1, padding:'13px' }} onClick={async () => {
+                const { error } = await onUpdateCategory(editingCatId, editCatForm);
+                setEditingCatId(null);
+              }}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
     )}
     {showAddCat && (
-      <div className="page-pad"><div style={{ background:'var(--white)', borderRadius:18, padding:20, boxShadow:'var(--shadow)', border:'1px solid var(--light)', marginTop:16 }}>
-        <div style={{ fontSize:16, fontWeight:700, marginBottom:16 }}>Add New Category</div>
-        <div className="form-group"><label className="form-label">Category name</label><input className="form-input" placeholder="e.g. Rods, Reels, Lures, Clothing" value={newCat.name} onChange={e => setNewCat(n => ({...n, name:e.target.value}))} /></div>
-        <div className="form-group"><label className="form-label">Emoji icon</label><input className="form-input" placeholder="e.g. 🎣" value={newCat.emoji} onChange={e => setNewCat(n => ({...n, emoji:e.target.value}))} /></div>
-        <div style={{ display:'flex', gap:10 }}>
-          <button className="btn-secondary" style={{ flex:1, padding:'13px' }} onClick={() => setShowAddCat(false)}>Cancel</button>
-          <button className="btn-primary" style={{ flex:1, padding:'13px' }} onClick={saveNewCat}>Save</button>
+      <div style={{ padding:'0 16px', marginTop:16 }}>
+        <div style={{ maxWidth:480, margin:'0 auto', background:'var(--white)', borderRadius:18, padding:24, boxShadow:'var(--shadow2)', border:'1px solid var(--light)' }}>
+          <div style={{ fontSize:17, fontWeight:800, marginBottom:20, color:'var(--dark)' }}>Add New Category</div>
+          <div className="form-group"><label className="form-label">Category name</label><input className="form-input" placeholder="e.g. Rods, Reels, Clothing" value={newCat.name} onChange={e => setNewCat(n => ({...n, name:e.target.value}))} /></div>
+          <div className="form-group"><label className="form-label">Emoji icon</label><input className="form-input" placeholder="e.g. 🎣 ⚙️ 👕" value={newCat.emoji} onChange={e => setNewCat(n => ({...n, emoji:e.target.value}))} /></div>
+          <div style={{ display:'flex', gap:10 }}>
+            <button className="btn-secondary" style={{ flex:1, padding:'13px' }} onClick={() => setShowAddCat(false)}>Cancel</button>
+            <button className="btn-primary" style={{ flex:1, padding:'13px' }} onClick={saveNewCat}>Save</button>
+          </div>
         </div>
-      </div></div>
+      </div>
     )}
     <div style={{ height:16 }} />
   </div>;
 }
 
 // ── STATS SCREEN ──────────────────────────────────────────────────────────
-function StatsScreen({ catches, sessions, user }) {
+function StatsScreen({ catches, sessions, user, onUpdateCatch }) {
   const [view, setView] = useState('main');
+  const [selectedCatch, setSelectedCatch] = useState(null);
   const species = [...new Set(catches.map(c=>c.species))];
   const pbs = species.map(s => { const sc = catches.filter(c=>c.species===s); const best = sc.reduce((a,b) => (parseFloat(a.weight_lb)||0) > (parseFloat(b.weight_lb)||0) ? a : b, sc[0]); return { species:s, weight:`${best.weight_lb}lb${best.weight_oz?` ${best.weight_oz}oz`:''}` }; });
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || 'Angler';
+
+  if (view === 'catchDetail' && selectedCatch) {
+    const c = selectedCatch;
+    const [editingCatch, setEditingCatch] = useState(false);
+    const [editForm, setEditForm] = useState({ ...c });
+    return <div>
+      <button className="back-btn" onClick={() => { setView('catches'); setSelectedCatch(null); }}>← Back to Catches</button>
+      <div style={{ padding:'0 16px' }}>
+        {editingCatch ? (
+          <div style={{ maxWidth:560, margin:'0 auto' }}>
+            <div style={{ fontSize:17, fontWeight:800, marginBottom:20 }}>Edit Catch</div>
+            <div className="form-group"><label className="form-label">Species</label><input className="form-input" value={editForm.species||''} onChange={e => setEditForm(f=>({...f,species:e.target.value}))}/></div>
+            <div className="form-group"><label className="form-label">Weight (lb)</label><input className="form-input" value={editForm.weight_lb||''} onChange={e => setEditForm(f=>({...f,weight_lb:e.target.value}))}/></div>
+            <div className="form-group"><label className="form-label">Weight (oz)</label><input className="form-input" value={editForm.weight_oz||''} onChange={e => setEditForm(f=>({...f,weight_oz:e.target.value}))}/></div>
+            <div className="form-group"><label className="form-label">Length (cm)</label><input className="form-input" value={editForm.length_cm||''} onChange={e => setEditForm(f=>({...f,length_cm:e.target.value}))}/></div>
+            <div className="form-group"><label className="form-label">Bait</label><input className="form-input" value={editForm.bait||''} onChange={e => setEditForm(f=>({...f,bait:e.target.value}))}/></div>
+            <div className="form-group"><label className="form-label">Lure</label><input className="form-input" value={editForm.lure||''} onChange={e => setEditForm(f=>({...f,lure:e.target.value}))}/></div>
+            <div className="form-group"><label className="form-label">Location</label><input className="form-input" value={editForm.location||''} onChange={e => setEditForm(f=>({...f,location:e.target.value}))}/></div>
+            <div className="form-group"><label className="form-label">Notes</label><textarea className="form-textarea" value={editForm.notes||''} onChange={e => setEditForm(f=>({...f,notes:e.target.value}))}/></div>
+            <div style={{ display:'flex', gap:10, marginBottom:24 }}>
+              <button className="btn-secondary" style={{ flex:1, padding:'13px' }} onClick={() => setEditingCatch(false)}>Cancel</button>
+              <button className="btn-primary" style={{ flex:1, padding:'13px' }} onClick={async () => {
+                await onUpdateCatch(c.id, editForm);
+                setEditingCatch(false);
+                setView('catches');
+                setSelectedCatch(null);
+              }}>Save Changes</button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ maxWidth:560, margin:'0 auto' }}>
+            <div className="catch-detail-img">
+              {c.photo ? <img src={c.photo} alt={c.species} /> : <FishImg species={c.species} style={{width:'100%',height:'100%',objectFit:'cover'}} />}
+            </div>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+              <div style={{ fontSize:22, fontWeight:800, color:'var(--dark)' }}>{c.species}</div>
+              <button className="edit-btn" onClick={() => { setEditForm({...c}); setEditingCatch(true); }}>Edit</button>
+            </div>
+            {[
+              ['Weight', `${c.weight_lb||'—'}lb ${c.weight_oz?c.weight_oz+'oz':''}`],
+              ['Length', c.length_cm ? `${c.length_cm}cm${c.length_in?' / '+c.length_in+'in':''}` : '—'],
+              ['Bait', c.bait||'—'],
+              ['Lure', c.lure||'—'],
+              ['Location', c.location||'—'],
+              ['Date', new Date(c.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})],
+            ].map(([label, val]) => val && val !== '—' ? (
+              <div className="catch-detail-row" key={label}>
+                <div className="catch-detail-label">{label}</div>
+                <div className="catch-detail-val">{val}</div>
+              </div>
+            ) : null)}
+            {c.notes && (
+              <div style={{ marginTop:16, padding:16, background:'var(--bg)', borderRadius:12, border:'1px solid var(--light)' }}>
+                <div style={{ fontSize:12, fontWeight:700, color:'var(--mid)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>Notes</div>
+                <div style={{ fontSize:14, color:'var(--dark)', lineHeight:1.6 }}>{c.notes}</div>
+              </div>
+            )}
+            <div style={{ height:24 }} />
+          </div>
+        )}
+      </div>
+    </div>;
+  }
 
   if (view === 'catches') return <div>
     <button className="back-btn" onClick={() => setView('main')}>← Back to Stats</button>
     <div className="section-header" style={{ paddingTop:4 }}><span className="section-title">All Catches</span></div>
     {catches.length === 0 ? <div className="empty-state"><div className="empty-state-title">No catches yet</div></div> : (
       <div className="catches-grid">
-        {catches.map(c => <div className="catch-drill-card" key={c.id}>
+        {catches.map(c => <div className="catch-drill-card" key={c.id} onClick={() => { setSelectedCatch(c); setView('catchDetail'); }} style={{ cursor:'pointer' }}>
           <div className="catch-drill-img">{c.photo ? <img src={c.photo} alt={c.species} /> : <FishImg species={c.species} style={{width:'100%',height:'100%',objectFit:'cover'}} />}</div>
           <div className="catch-drill-body"><div className="catch-drill-species">{c.species}</div><div className="catch-drill-weight">{c.weight_lb}lb {c.weight_oz&&`${c.weight_oz}oz`}</div><div className="catch-drill-meta">{c.location}<br/>{new Date(c.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div></div>
         </div>)}
@@ -1786,6 +1656,25 @@ export default function App() {
     setScreen('home');
   };
 
+  const handleUpdateCatch = async (id, updates) => {
+    const { error } = await supabase.from('catches').update({
+      species: updates.species,
+      weight_lb: updates.weight_lb,
+      weight_oz: updates.weight_oz,
+      length_cm: updates.length_cm,
+      bait: updates.bait,
+      lure: updates.lure,
+      location: updates.location,
+      notes: updates.notes,
+    }).eq('id', id);
+    if (!error) {
+      setCatches(p => p.map(c => c.id===id ? {...c, ...updates} : c));
+      showToast('Catch updated!');
+    } else {
+      showToast('Failed to update: ' + error.message, 'error');
+    }
+  };
+
   const handleAddSpot = async (spot) => {
     const { data, error } = await supabase.from('spots').insert({ user_id:user.id, ...spot }).select().single();
     if (!error && data) setSpots(p => [...p, data]);
@@ -1851,6 +1740,13 @@ export default function App() {
     if (!error) { setTackleItems(p => p.filter(i => i.id!==id)); showToast('Item deleted!'); }
   };
 
+  const handleUpdateCategory = async (id, updates) => {
+    const { error } = await supabase.from('tackle_categories').update({ name: updates.name, emoji: updates.emoji }).eq('id', id);
+    if (!error) { setTackleCategories(p => p.map(c => c.id===id ? {...c, ...updates} : c)); showToast('Category updated!'); }
+    else { showToast('Failed to update: ' + error.message, 'error'); }
+    return { error };
+  };
+
   const handleUpdateProfile = async (p) => {
     setProfile(p);
     const { error: profErr } = await supabase.from('profiles').upsert({
@@ -1872,9 +1768,9 @@ export default function App() {
       case 'home': return <HomeScreen onLog={() => setScreen('log')} catches={catches} user={user} />;
       case 'feed': return <FeedScreen catches={catches} user={user} />;
       case 'map': return <MapScreen catchPins={catchPins} spots={spots} onAddSpot={handleAddSpot} />;
-      case 'log': return <LogScreen onSaved={handleSaveCatch} customBaits={customBaits} customLures={customLures} onAddCustomBait={b => setCustomBaits(p => p.includes(b)?p:[...p,b])} onAddCustomLure={l => setCustomLures(p => p.includes(l)?p:[...p,l])} />;
-      case 'tackle': return <TackleScreen user={user} categories={tackleCategories} items={tackleItems} onAddCategory={handleAddCategory} onAddItem={handleAddItem} onUpdateItem={handleUpdateItem} onDeleteItem={handleDeleteItem} />;
-      case 'stats': return <StatsScreen catches={catches} sessions={sessions} user={user} />;
+      case 'log': return <LogScreen onSaved={handleSaveCatch} customBaits={customBaits} customLures={customLures} onAddCustomBait={b => setCustomBaits(p => p.includes(b)?p:[...p,b])} onAddCustomLure={l => setCustomLures(p => p.includes(l)?p:[...p,l])} user={user} />;
+      case 'tackle': return <TackleScreen user={user} categories={tackleCategories} items={tackleItems} onAddCategory={handleAddCategory} onAddItem={handleAddItem} onUpdateItem={handleUpdateItem} onDeleteItem={handleDeleteItem} onUpdateCategory={handleUpdateCategory} />;
+      case 'stats': return <StatsScreen catches={catches} sessions={sessions} user={user} onUpdateCatch={handleUpdateCatch} />;
       case 'account': return <AccountScreen user={user} profile={profile} onUpdate={handleUpdateProfile} onLogout={handleLogout} />;
       default: return <HomeScreen onLog={() => setScreen('log')} catches={catches} user={user} />;
     }
