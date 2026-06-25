@@ -450,8 +450,6 @@ const WIND_DIRS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW
 // ── SEED DATA REMOVED ──────────────────────────────────────────────────
 const SEED_PINS = [];
 
-  };
-
   useEffect(() => {
     if (leafletMap.current) return;
     const L = window.L; if (!L) return;
