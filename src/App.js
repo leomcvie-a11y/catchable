@@ -1338,7 +1338,6 @@ function TackleScreen({ user, categories, items, onAddCategory, onAddItem, onUpd
           </div>
         </div>
       )}
-    )}
     {showAddCat && (
       <div style={{ padding:'0 16px', marginTop:16 }}>
         <div style={{ maxWidth:480, margin:'0 auto', background:'var(--white)', borderRadius:18, padding:24, boxShadow:'var(--shadow2)', border:'1px solid var(--light)' }}>
