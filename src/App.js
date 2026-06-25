@@ -842,7 +842,48 @@ function HomeScreen({ onLog, catches, user }) {
 // ── FEED SCREEN ───────────────────────────────────────────────────────────
 function FeedScreen({ catches, user }) {
   const [tab, setTab] = useState('following');
+  const [likedPosts, setLikedPosts] = useState({});
   const myCatches = catches.filter(c => c.photo);
+
+  const PostCard = ({ c }) => {
+    const liked = likedPosts[c.id] || false;
+    const [likes, setLikes] = useState(0);
+    return (
+      <div className="feed-post">
+        <div className="feed-post-header">
+          <div className="feed-avatar">{user?.user_metadata?.full_name?.charAt(0) || 'A'}</div>
+          <div>
+            <div className="feed-username">{user?.user_metadata?.full_name || 'You'}</div>
+            <div className="feed-location">{c.location || 'Location not set'}</div>
+          </div>
+          <div className="feed-badge">{c.weight_lb}lb {c.species}</div>
+        </div>
+        <div className="feed-img-area"><img src={c.photo} alt={c.species} /></div>
+        <div className="feed-post-body">
+          <div className="feed-post-text">{c.notes || `${c.species} caught${c.bait ? ` on ${c.bait}` : ''}.`}</div>
+          <div className="feed-tags">
+            <span className="feed-tag">#{c.species?.replace(' ','')}</span>
+            {c.bait && <span className="feed-tag">#{c.bait?.replace(' ','')}</span>}
+            {c.location && <span className="feed-tag">#{c.location?.replace(/[^a-zA-Z]/g,'')}</span>}
+          </div>
+        </div>
+        <div className="feed-actions">
+          <button className={`feed-action${liked?' liked':''}`} onClick={() => { setLikedPosts(p=>({...p,[c.id]:!liked})); setLikes(l=>liked?l-1:l+1); }}>
+            <svg fill={liked?'var(--red)':'none'} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            {likes}
+          </button>
+          <button className="feed-action">
+            <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            0
+          </button>
+          <button className="feed-action">
+            <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Share
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div>
@@ -852,32 +893,19 @@ function FeedScreen({ catches, user }) {
       </div>
       <div style={{ height:16 }} />
       {tab === 'following' && (
-        myCatches.length > 0 ? myCatches.map(c => (
-          <div className="feed-post" key={c.id}>
-            <div className="feed-post-header">
-              <div className="feed-avatar">{user?.user_metadata?.full_name?.charAt(0) || 'A'}</div>
-              <div><div className="feed-username">{user?.user_metadata?.full_name || 'You'}</div><div className="feed-location">{c.location || 'Location not set'}</div></div>
-              <div className="feed-badge">{c.weight_lb}lb {c.species}</div>
+        myCatches.length > 0
+          ? myCatches.map(c => <PostCard key={c.id} c={c} />)
+          : <div className="empty-state">
+              <div className="empty-state-icon"><Icon.Feed /></div>
+              <div className="empty-state-title">Nothing here yet</div>
+              <div className="empty-state-text">Log catches with photos and they will appear in your feed. Follow other anglers to see their catches too.</div>
             </div>
-            <div className="feed-img-area"><img src={c.photo} alt={c.species} /></div>
-            <div className="feed-post-body">
-              <div className="feed-post-text">{c.notes || `${c.species} caught on ${c.bait || 'unknown bait'}.`}</div>
-              <div className="feed-tags"><span className="feed-tag">#{c.species?.replace(' ','')}</span>{c.bait && <span className="feed-tag">#{c.bait?.replace(' ','')}</span>}</div>
-            </div>
-          </div>
-        )) : (
-          <div className="empty-state">
-            <div className="empty-state-icon"><Icon.Feed /></div>
-            <div className="empty-state-title">Nothing here yet</div>
-            <div className="empty-state-text">Log catches with photos and they'll appear in your feed.</div>
-          </div>
-        )
       )}
       {tab === 'explore' && (
         <div className="empty-state">
           <div className="empty-state-icon"><Icon.Map /></div>
-          <div className="empty-state-title">Explore coming soon</div>
-          <div className="empty-state-text">As more anglers join CatchBase, their catches will appear here ordered by distance from you.</div>
+          <div className="empty-state-title">Explore nearby catches</div>
+          <div className="empty-state-text">As more anglers join CatchBase and log catches near you, they will appear here ordered by distance.</div>
         </div>
       )}
     </div>
@@ -1065,7 +1093,7 @@ function TackleScreen({ user, categories, items, onAddCategory, onAddItem, onUpd
   };
 
   const formBox = { background:'var(--white)', borderRadius:18, padding:20, boxShadow:'var(--shadow)', border:'1px solid var(--light)', marginTop:16 };
-  const TACKLE_IMG_URLS = { 'Rods':'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Fishing_rod_with_reel.jpg/320px-Fishing_rod_with_reel.jpg', 'Reels':'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Spinning_reel.jpg/320px-Spinning_reel.jpg', 'Lures':'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Fishing_lures.jpg/320px-Fishing_lures.jpg' };
+  const CAT_ICONS = { 'Rods':'🎣', 'Reels':'⚙️', 'Lures':'🎯', 'Terminal':'🪝', 'Bait':'🧪', 'Other':'🎒' };
 
   // Item detail view
   if (selectedItem && item) {
@@ -1171,16 +1199,19 @@ function TackleScreen({ user, categories, items, onAddCategory, onAddItem, onUpd
       </div>
     ) : (
       <div className="tackle-grid">
-        {categories.map(c => (
-          <div className="tackle-cat" key={c.id} onClick={() => setSelectedCat(c.id)}>
-            <div className="tackle-cat-img">
-              {TACKLE_IMG_URLS[c.name] ? <img src={TACKLE_IMG_URLS[c.name]} alt={c.name} /> : <div style={{ fontSize:32 }}>{c.emoji||'📦'}</div>}
+        {categories.map(c => {
+          const count = items.filter(i=>i.category_id===c.id).length;
+          return (
+            <div className="tackle-cat" key={c.id} onClick={() => setSelectedCat(c.id)}>
+              <div className="tackle-cat-img">
+                <div style={{ fontSize:36 }}>{CAT_ICONS[c.name] || c.emoji || '📦'}</div>
+              </div>
+              <div className="tackle-name">{c.name}</div>
+              <div className="tackle-count">{count} {count===1?'item':'items'}</div>
+              <div className="tackle-bar"><div className="tackle-bar-fill" style={{ width:`${Math.min(100,(count/8)*100)}%` }} /></div>
             </div>
-            <div className="tackle-name">{c.name}</div>
-            <div className="tackle-count">{items.filter(i=>i.category_id===c.id).length} items</div>
-            <div className="tackle-bar"><div className="tackle-bar-fill" style={{ width:`${Math.min(100,(items.filter(i=>i.category_id===c.id).length/8)*100)}%` }} /></div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     )}
     {showAddCat && (
@@ -1381,6 +1412,15 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const DEFAULT_CATEGORIES = [
+    { name:'Rods', emoji:'🎣' },
+    { name:'Reels', emoji:'⚙️' },
+    { name:'Lures', emoji:'🎯' },
+    { name:'Terminal', emoji:'🪝' },
+    { name:'Bait', emoji:'🧪' },
+    { name:'Other', emoji:'🎒' },
+  ];
+
   const loadAllData = async (uid) => {
     const [{ data:cats }, { data:itms }, { data:catchData }, { data:spotData }, { data:prof }] = await Promise.all([
       supabase.from('tackle_categories').select('*').eq('user_id', uid).order('created_at'),
@@ -1389,7 +1429,15 @@ export default function App() {
       supabase.from('spots').select('*').eq('user_id', uid).order('created_at'),
       supabase.from('profiles').select('*').eq('id', uid).single(),
     ]);
-    if (cats) setTackleCategories(cats);
+
+    // Auto-create default categories for new users
+    if (cats && cats.length === 0) {
+      const inserts = DEFAULT_CATEGORIES.map(c => ({ user_id:uid, name:c.name, emoji:c.emoji }));
+      const { data:newCats } = await supabase.from('tackle_categories').insert(inserts).select();
+      if (newCats) setTackleCategories(newCats);
+    } else if (cats) {
+      setTackleCategories(cats);
+    }
     if (itms) setTackleItems(itms);
     if (catchData) {
       setCatches(catchData);
