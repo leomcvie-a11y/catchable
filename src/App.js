@@ -1330,9 +1330,8 @@ function TackleScreen({ user, categories, items, onAddCategory, onAddItem, onUpd
             <div className="form-group"><label className="form-label">Emoji icon</label><input className="form-input" value={editCatForm.emoji} onChange={e => setEditCatForm(f => ({...f, emoji:e.target.value}))} /></div>
             <div style={{ display:'flex', gap:10 }}>
               <button className="btn-secondary" style={{ flex:1, padding:'13px' }} onClick={() => setEditingCatId(null)}>Cancel</button>
-              <button className="btn-primary" style={{ flex:1, padding:'13px' }} onClick={async () => {
-                const { error } = await onUpdateCategory(editingCatId, editCatForm);
-                setEditingCatId(null);
+              <button className="btn-primary" style={{ flex:1, padding:'13px' }} onClick={() => {
+                onUpdateCategory(editingCatId, editCatForm).then(() => setEditingCatId(null));
               }}>Save</button>
             </div>
           </div>
@@ -1378,9 +1377,8 @@ function CatchDetailView({ catch_: c, onBack, onUpdateCatch, onDone }) {
           </div>
           <div style={{ display:'flex', gap:10, marginBottom:24 }}>
             <button className="btn-secondary" style={{ flex:1, padding:'13px' }} onClick={() => setEditingCatch(false)}>Cancel</button>
-            <button className="btn-primary" style={{ flex:1, padding:'13px' }} onClick={async () => {
-              await onUpdateCatch(c.id, editForm);
-              onDone();
+            <button className="btn-primary" style={{ flex:1, padding:'13px' }} onClick={() => {
+              onUpdateCatch(c.id, editForm).then(() => onDone());
             }}>Save Changes</button>
           </div>
         </div>
