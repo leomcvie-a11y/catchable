@@ -832,7 +832,7 @@ function HomeScreen({ onLog, catches, user }) {
         <div className="hero-stats">
           <div><div className="hero-stat-val">{catches.length}</div><div className="hero-stat-label">Your catches</div></div>
           <div><div className="hero-stat-val">{[...new Set(catches.map(c=>c.species))].length}</div><div className="hero-stat-label">Species</div></div>
-          <div><div className="hero-stat-val">{SEED_ANGLERS.length + 1}</div><div className="hero-stat-label">Anglers</div></div>
+          
         </div>
       </div>
       <TideWeatherCard />
@@ -937,8 +937,11 @@ function FeedScreen({ catches, user }) {
         )}
         {tab === 'explore' && (
           <div>
-            <div style={{ padding:'0 16px 12px', fontSize:12, color:'var(--mid)', fontWeight:600 }}>Showing catches nearest to you first</div>
-            {SEED_ANGLERS.map(p => <SeedPostCard key={p.id} p={p} />)}
+            <div className="empty-state">
+              <div className="empty-state-icon">🌍</div>
+              <div className="empty-state-title">Explore nearby catches</div>
+              <div className="empty-state-text">As anglers near you log catches and publish them to the community feed, they will appear here ordered by distance.</div>
+            </div>
           </div>
         )}
       </div>
