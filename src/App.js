@@ -468,6 +468,102 @@ const WIND_DIRS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW
 // ── SEED DATA REMOVED ──────────────────────────────────────────────────
 const SEED_PINS = [];
 
+// ── HELPERS ───────────────────────────────────────────────────────────────
+function FishImg({ species, style, className }) {
+  const [err, setErr] = useState(false);
+  const src = FISH_PHOTOS[species];
+  if (!src || err) return (
+    <div style={{width:'100%',height:'100%',background:'linear-gradient(135deg,#E8F4FD,#C8E8F8)',display:'flex',alignItems:'center',justifyContent:'center',...(style||{})}}>
+      <span style={{fontSize:32}}>🐟</span>
+    </div>
+  );
+  return <img src={src} alt={species} style={style} className={className} onError={() => setErr(true)} />;
+}
+
+function PhotoUpload({ value, onChange, label='Add Photo', height=200 }) {
+  const ref = useRef(null);
+  const handleFile = e => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => onChange(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+  return (
+    <div className="form-group">
+      {label && <label className="form-label">{label}</label>}
+      <div className="photo-upload" onClick={() => ref.current.click()}>
+        {value ? (
+          <div className="photo-preview" style={{height}}>
+            <img src={value} alt="preview" />
+            <button className="photo-remove" onClick={e => {e.stopPropagation(); onChange(null);}}>x</button>
+          </div>
+        ) : (
+          <div className="photo-upload-empty" style={{height}}>
+            <span style={{fontSize:32}}>📷</span>
+            <div className="photo-upload-text">Tap to add photo</div>
+            <div className="photo-upload-sub">Take a photo or choose from gallery</div>
+          </div>
+        )}
+      </div>
+      <input ref={ref} type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={handleFile} />
+    </div>
+  );
+}
+
+function SearchDropdown({ label, seaOptions, riverOptions, value, onChange, customItems=[] }) {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const [newCustom, setNewCustom] = useState('');
+  const [customs, setCustoms] = useState(customItems);
+  const ref = useRef(null);
+  useEffect(() => {
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+  const filter = items => items.filter(i => i.toLowerCase().includes(query.toLowerCase()));
+  const fSea = filter(seaOptions), fRiver = filter(riverOptions), fCustom = filter(customs);
+  const hasResults = fSea.length || fRiver.length || fCustom.length;
+  const select = item => { onChange(item); setQuery(''); setOpen(false); };
+  const addCustom = () => {
+    const v = (newCustom || query).trim();
+    if (!v) return;
+    if (!customs.includes(v)) setCustoms(c => [...c, v]);
+    select(v); setNewCustom('');
+  };
+  return (
+    <div className="form-group" ref={ref}>
+      <label className="form-label">{label}</label>
+      <div className="search-dropdown-wrap">
+        <span className="search-icon-pos">🔍</span>
+        <input
+          className="search-dropdown-input"
+          placeholder={"Search " + label.toLowerCase() + "..."}
+          value={value || query}
+          onChange={e => { setQuery(e.target.value); if (value) onChange(''); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+        />
+        {(value || query) && <button className="search-clear" onClick={() => { onChange(''); setQuery(''); }}>x</button>}
+      </div>
+      {value && <div className="selected-badge">{value}<button className="selected-badge-x" onClick={() => onChange('')}>x</button></div>}
+      {open && (
+        <div className="dropdown-list">
+          {fCustom.length > 0 && <><div className="dropdown-group-label">My Custom</div>{fCustom.map(i => <div key={i} className={"dropdown-item" + (value===i?" selected":"")} onClick={() => select(i)}>{i}</div>)}</>}
+          {fSea.length > 0 && <><div className="dropdown-group-label">Sea</div>{fSea.map(i => <div key={i} className={"dropdown-item" + (value===i?" selected":"")} onClick={() => select(i)}>{i}</div>)}</>}
+          {fRiver.length > 0 && <><div className="dropdown-group-label">River & Coarse</div>{fRiver.map(i => <div key={i} className={"dropdown-item" + (value===i?" selected":"")} onClick={() => select(i)}>{i}</div>)}</>}
+          {!hasResults && query && <div style={{padding:'10px 14px',fontSize:13,color:'var(--mid)'}}>No results for "{query}"</div>}
+          <div style={{padding:'8px 14px',borderTop:'1px solid var(--light)'}}>
+            <div style={{display:'flex',gap:6}}>
+              <input className="form-input" style={{flex:1,padding:'9px 12px',fontSize:13}} placeholder="Add your own..." value={newCustom} onChange={e => setNewCustom(e.target.value)} onKeyDown={e => e.key==='Enter' && addCustom()} />
+              <button className="btn-primary" style={{padding:'9px 14px',fontSize:13,flex:'none'}} onClick={addCustom}>+ Add</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── LEAFLET MAP ───────────────────────────────────────────────────────────
 function LeafletMap({ height='420px', onPinDrop=null, showControls=true, catchPins=[], communitySpotPins=[], circleRadius=2000, defaultFilter='my' }) {
   const mapRef = useRef(null);
